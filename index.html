@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="build" content="v4.0.0 · 2026-11-27 15:55">
+<meta name="build" content="v5.0.0 · 2026-11-27 22:50">
 <link rel="icon" href="data:,">
 <title>液态战争 · LIQUID WAR.IO</title>
 <style>
@@ -236,7 +236,8 @@
           <h2>v4 新增玩法</h2>
           <p><code>地形区</code>：加速带跑两格、胶水区减速粘滞、危险区持续掉血（变弱易被吞）、治疗区回血。地图卡片下方有色块图例。</p>
           <p><code>双光标分兵</code>：按 <code>F</code> 或 <code>Shift+点击</code> 开启第二光标，粒子按奇偶分成两路，可前后夹击包围对手；再次点击战场关闭分兵。</p>
-          <p><code>据点模式</code>：中心据点圈独占并累计 12 秒即胜；失去控制则进度回退。超时按据点进度决胜。</p>
+          <p><code>据点模式</code>：中心据点圈是战术目标，会显示当前占据队与进度，但<strong>不提前结束战斗</strong>。胜负与吞并战一致：某队吃掉全部即胜，否则时间到按粒子最多者胜。</p>
+          <p><code>胜负规则</code>：只有两种结束方式——① 某队吞并全部粒子（DOMINATION）；② 时间耗尽时粒子最多者胜（TIME OUT）。不会再出现"时间没到却结算"的情况。</p>
           <p><code>战术预设</code>：猛攻/铁壁/人海/闪击一键套用五参数，再按需微调滑杆。</p>
           <h2>战术手册（玩家经验）</h2>
           <p><b>后拉聚团</b>：先把光标拉回己方腹地，让散兵收拢成团，再一次性推向敌阵，避免添油式送兵。</p>
@@ -253,7 +254,7 @@
   </main>
 
   <footer>
-    <span data-build>v4.0.0 · 2026-11-27 15:55</span>
+    <span data-build>v5.0.0 · 2026-11-27 22:50</span>
     <span>LW5 战斗模型 · 12 方向梯度 · 确定性单测</span>
   </footer>
 </div>
@@ -860,16 +861,12 @@
     w.counts.fill(0);
     for (var k3=0;k3<w.total;k3++) if (w.php[k3]>=0) w.counts[w.pteam[k3]]++;
     w.timeLeft=Math.max(0,w.timeLeft-dt);
+    // 胜负判定统一为两条铁律(v5.0.0 修复)：某队吞并全部粒子，或时间到按粒子最多者胜。
+    // 据点仅作战术目标展示（进度/控制者），不提前终止战斗、不改变胜负。
     var base=judgeWinner(w.counts,w.total,w.timeLeft);
     if (w.mode==='stronghold') {
       var sh=strongholdOutcome(w,dt);
       w.stronghold.controller=sh.controller; w.stronghold.strength=sh.strength;
-      if (sh.over) base=sh;
-      // 据点模式超时：按据点进度(charge)而非粒子数决胜
-      else if (base.over && base.reason==='timeout') {
-        var owner=w.stronghold.hold>=0?w.stronghold.hold:base.winner;
-        base={ over:true, winner:owner, reason:'timeout' };
-      }
     }
     w.result=base;
     return w;
@@ -1006,11 +1003,11 @@
     try {
       var s = JSON.parse(localStorage.getItem('lw2setup') || 'null') || {};
       return { n:s.n||4, modes:s.modes||['human','cpu','cpu','cpu','cpu','cpu'], map:s.map||'classic',
-        mode:s.mode||'stronghold', tactic:s.tactic||'balanced',
+        mode:s.mode||'elimination', tactic:s.tactic||'balanced',
         rules:{ attack:s.rules&&s.rules.attack!==undefined?s.rules.attack:8, defense:s.rules&&s.rules.defense!==undefined?s.rules.defense:8,
           health:s.rules&&s.rules.health!==undefined?s.rules.health:8, influence:s.rules&&s.rules.influence!==undefined?s.rules.influence:8,
           army:s.rules&&s.rules.army!==undefined?s.rules.army:16 } };
-    } catch (e) { return { n:4, modes:['human','cpu','cpu','cpu','cpu','cpu'], map:'classic', mode:'stronghold', tactic:'balanced', rules:{attack:8,defense:8,health:8,influence:8,army:16} }; }
+    } catch (e) { return { n:4, modes:['human','cpu','cpu','cpu','cpu','cpu'], map:'classic', mode:'elimination', tactic:'balanced', rules:{attack:8,defense:8,health:8,influence:8,army:16} }; }
   }
   function saveSetup() { try { localStorage.setItem('lw2setup', JSON.stringify(setup)); } catch (e) {} }
   function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
@@ -1116,7 +1113,7 @@
   // v4：模式选择（吞并 / 据点争夺）
   function buildModesel() {
     var box=$('modesel'); box.innerHTML='';
-    var defs=[['elimination','吞并战','消灭所有敌人'],['stronghold','据点争夺','独占中心12秒']];
+    var defs=[['elimination','吞并战','吃掉全部 / 时间到比人数'],['stronghold','据点模式','据点为战术目标，胜负同上']];
     defs.forEach(function(d){
       var b=document.createElement('button'); b.type='button';
       b.className=setup.mode===d[0]?'on':'';
@@ -1297,7 +1294,7 @@
   function endGame() {
     finished=true;
     var r=world.result, win=world.teams[r.winner];
-    $('result-reason').textContent=r.reason==='domination'?'DOMINATION':'TIME OUT';
+    $('result-reason').textContent=r.reason==='domination'?'DOMINATION':(r.reason==='stronghold'?'据点占领':'TIME OUT');
     $('result-title').textContent=win.name+(win.isAI?' (CPU)':' (P1)')+' WINS';
     var share=Math.round(world.counts[r.winner]/world.total*100);
     var used=Math.round((180-world.timeLeft));
