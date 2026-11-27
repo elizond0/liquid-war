@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="build" content="v6.0.0 · 2026-11-27 23:15">
+<meta name="build" content="v7.0.0 · 2026-11-28 01:20">
 <link rel="icon" href="data:,">
 <title>液态战争 · LIQUID WAR.IO</title>
 <style>
@@ -275,7 +275,7 @@
   </main>
 
   <footer>
-    <span data-build>v6.0.0 · 2026-11-27 23:15</span>
+    <span data-build>v7.0.0 · 2026-11-28 01:20</span>
     <span>LW5 战斗模型 · 12 方向梯度 · 确定性单测</span>
   </footer>
 </div>
@@ -1292,6 +1292,11 @@
   }
 
   // ===== 对局流程 =====
+  var lastWasRandom = false; // 上一局是否由「随机对局」开启，决定 Play Again 是否重新随机
+  function restart() {
+    if (lastWasRandom) quickStart(true);
+    else startGame();
+  }
   function activeTeamCount() {
     var n=0;
     for (var i=0;i<6;i++) if (setup.modes[i]!=='off') n++;
@@ -1374,7 +1379,7 @@
   window.addEventListener('keydown', function(e){
     var k=e.key.toLowerCase(); keys[k]=true;
     if (k==='escape'||k===' ') { e.preventDefault(); togglePause(); }
-    if (k==='r' && world && !countdownTimer) startGame();
+    if (k==='r' && world && !countdownTimer) restart();
     if (k==='f' && world && !finished && !countdownTimer) setSplit(!world.teams[0].split);
   });
   window.addEventListener('keyup', function(e){ keys[e.key.toLowerCase()]=false; });
@@ -1410,6 +1415,7 @@
   }
 
   function quickStart(randomize) {
+    lastWasRandom = !!randomize;
     if (randomize) {
       setup.map = L.MAP_DEFS[Math.floor(Math.random()*L.MAP_DEFS.length)].id;
       var n = 2 + Math.floor(Math.random()*3);
@@ -1430,10 +1436,10 @@
   $('btn-setup-back').onclick=function(){ show('view-menu'); };
   $('btn-opts-back').onclick=function(){ show('view-menu'); };
   $('btn-about-back').onclick=function(){ show('view-menu'); };
-  $('btn-start').onclick=function(){ startGame(); };
+  $('btn-start').onclick=function(){ lastWasRandom=false; startGame(); };
   $('btn-resume').onclick=function(){ togglePause(false); };
   $('btn-leave').onclick=function(){ togglePause(false); show('view-menu'); world=null; };
-  $('btn-again').onclick=function(){ startGame(); };
+  $('btn-again').onclick=restart;
   $('btn-result-menu').onclick=function(){ show('view-menu'); world=null; };
   [['opt-cursor','cursor'],['opt-music','music'],['opt-sfx','sfx'],['opt-water','water']].forEach(function(p){
     var el=$(p[0]), out=$(p[0]+'-v');
@@ -1447,8 +1453,9 @@
   // 调试出口（自动化验收）
   window.LWGame = {
     getWorld:function(){ return world; },
-    setTeams:function(n){ for (var i=0;i<6;i++) setup.modes[i]= i<n?(i===0?'human':'cpu'):'off'; saveSetup(); startGame(); },
-    start:startGame,
+    isRandom:function(){ return lastWasRandom; },
+    setTeams:function(n){ for (var i=0;i<6;i++) setup.modes[i]= i<n?(i===0?'human':'cpu'):'off'; saveSetup(); lastWasRandom=false; startGame(); },
+    start:function(){ lastWasRandom=false; startGame(); },
     quickStart:quickStart,
     togglePause:togglePause,
     advance:function(n){ if (!world) return 0; for (var i=0;i<n;i++) L.step(world,STEP); return world.tick; },
