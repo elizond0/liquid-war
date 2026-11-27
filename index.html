@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="build" content="v1.0 · 2026-11-26 23:57">
+<meta name="build" content="v1.0.1 · 2026-11-27 09:14">
 <link rel="icon" href="data:,">
 <title>液态战争 · LIQUID WAR</title>
 <style>
@@ -109,7 +109,7 @@
   </main>
 
   <footer>
-    <span data-build>v1.0 · 2026-11-26 23:57</span>
+    <span data-build>v1.0.1 · 2026-11-27 09:14</span>
     <span>距离场 BFS + 梯度下降 · 粒子守恒 · 无服务端</span>
   </footer>
 </div>
@@ -480,8 +480,9 @@
     }
   }
 
+  function over() { return !!(world && world.result && world.result.over); }
   function pointer(e) {
-    if (!world || world.result) return;
+    if (!world || over()) return;
     var r = cv.getBoundingClientRect();
     var x = (e.clientX - r.left) / r.width * world.width;
     var y = (e.clientY - r.top) / r.height * world.height;
@@ -500,7 +501,7 @@
   window.addEventListener('keyup', function (e) { keys[e.key.toLowerCase()] = false; });
 
   function nudge() {
-    if (!world || world.result) return;
+    if (!world || over()) return;
     var tm = world.teams[0], d = world.cell * 9;
     if (keys['a'] || keys['arrowleft']) tm.tx -= d;
     if (keys['d'] || keys['arrowright']) tm.tx += d;
@@ -511,7 +512,7 @@
   }
 
   function togglePause() {
-    if (world.result) return;
+    if (over()) return;
     paused = !paused; pauseBtn.textContent = paused ? '继续' : '暂停';
   }
   pauseBtn.addEventListener('click', togglePause);
@@ -524,7 +525,7 @@
     var dt = (ts - last) / 1000; last = ts;
     if (dt > 0.25) dt = 0.25;
     nudge();
-    if (!paused && !world.result) {
+    if (!paused && !over()) {
       acc += dt;
       var guard = 0;
       while (acc >= STEP && guard++ < 8) { L.step(world, STEP); acc -= STEP; }
