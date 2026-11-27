@@ -3,114 +3,214 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="build" content="v1.0.1 · 2026-11-27 09:14">
+<meta name="build" content="v2.0.0 · 2026-11-27 10:05">
 <link rel="icon" href="data:,">
-<title>液态战争 · LIQUID WAR</title>
+<title>液态战争 · LIQUID WAR.IO</title>
 <style>
   :root{
-    --bg:#0E1013; --panel:#111318; --line:#343943; --line-soft:#242831;
-    --ink:#D8D5CC; --ink-dim:#8B8F98; --ink-faint:#6A6F79;
+    --bg:#0B0D11; --panel:#12151B; --line:#343A46; --line-soft:#242A34;
+    --ink:#DCD9D0; --dim:#9499A4; --faint:#6B7180; --accent:#E8A33D;
     --serif:Georgia,"Songti SC","STSong",serif;
     --sans:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--ink)}
+  html,body{margin:0;background:var(--bg);color:var(--ink);min-height:100%}
   body{font-family:var(--sans);font-size:14px;-webkit-text-size-adjust:100%}
-  .shell{max-width:1180px;margin:0 auto;padding:20px 18px 14px}
-
-  header{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:11px}
-  h1{font:700 27px/1.05 var(--serif);letter-spacing:.05em;margin:0}
-  .kicker{font:11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)}
-  .sub{font:12px/1.5 var(--sans);color:var(--ink-dim);margin-left:auto;max-width:46ch;text-align:right}
-
-  main{display:grid;grid-template-columns:minmax(0,1fr) 232px;gap:16px;margin-top:14px}
-  .arena{position:relative;border:1px solid var(--line);min-width:0}
-  canvas{display:block;width:100%;height:auto;background:var(--panel);touch-action:none;cursor:crosshair}
-  .banner{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:none;
-    font:12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;
-    background:#0E1013;color:var(--ink);border:1px solid var(--line);padding:7px 12px;white-space:nowrap}
-  .banner.on{display:block}
-  .hint{position:absolute;left:10px;bottom:9px;font:11px/1.4 var(--mono);color:var(--ink-faint);pointer-events:none}
-
-  aside{border-left:1px solid var(--line);padding-left:15px;min-width:0}
-  .sect{font:10px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 9px}
-  .clock{font:22px/1 var(--mono);color:var(--ink);margin:0 0 3px}
-  .clock small{font-size:11px;color:var(--ink-faint);letter-spacing:.12em}
-  .rule{height:1px;background:var(--line-soft);margin:15px 0}
-
-  .team{display:grid;grid-template-columns:11px 1fr auto;align-items:center;gap:8px;margin-bottom:10px}
-  .sw{width:11px;height:11px;display:block}
-  .nm{font:12px/1 var(--mono);color:var(--ink)}
-  .nm em{font-style:normal;color:var(--ink-faint);font-size:10px;margin-left:5px}
-  .ct{font:13px/1 var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
-  .bar{grid-column:2/4;height:2px;background:var(--line-soft);margin-top:-3px}
-  .bar i{display:block;height:2px}
-
-  .ctl{display:flex;flex-wrap:wrap;gap:7px}
-  button,select{font:12px/1 var(--mono);color:var(--ink);background:transparent;border:1px solid var(--line);padding:7px 9px;cursor:pointer}
-  button:hover,select:hover{background:var(--ink);color:var(--bg)}
-  select{padding:6px 7px}
-  .keys{font:11px/1.7 var(--mono);color:var(--ink-dim);margin-top:12px}
-  .keys b{color:var(--ink);font-weight:400}
-
-  footer{margin-top:14px;border-top:1px solid var(--line);padding-top:9px;display:flex;
-    justify-content:space-between;gap:12px;flex-wrap:wrap;
-    font:11px/1.4 var(--mono);color:var(--ink-faint)}
-
+  button,input,select{font-family:var(--mono)}
+  .hidden{display:none !important}
+  .shell{max-width:1180px;margin:0 auto;padding:22px 18px 16px;min-height:100vh;display:flex;flex-direction:column}
+  header{border-bottom:1px solid var(--line);padding-bottom:12px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  h1{font:700 30px/1 var(--serif);letter-spacing:.06em;margin:0}
+  h1 small{font:10px/1 var(--mono);letter-spacing:.24em;color:var(--dim);display:block;margin-top:7px}
+  .tag{font:11px/1.5 var(--mono);color:var(--dim);margin-left:auto;text-align:right;max-width:42ch}
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:22px 0}
+  .view{width:100%;max-width:920px}
+  .panel{border:1px solid var(--line);background:var(--panel);padding:22px 24px}
+  .phead{font:10px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin:0 0 16px}
+  .menu{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:0 auto}
+  .menu .name{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .menu .name label{font:11px/1 var(--mono);color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
+  .menu input[type=text]{flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 12px;font-size:14px;outline:none}
+  .menu input[type=text]:focus{border-color:var(--accent)}
+  .btn{background:transparent;border:1px solid var(--line);color:var(--ink);padding:12px 14px;font:13px/1 var(--mono);letter-spacing:.05em;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center}
+  .btn:hover{background:var(--ink);color:var(--bg)}
+  .btn.primary{border-color:var(--accent);color:var(--accent)}
+  .btn.primary:hover{background:var(--accent);color:var(--bg)}
+  .btn .arrow{color:var(--faint)}
+  .btn:hover .arrow{color:inherit}
+  .setup{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .col{min-width:0}
+  .sect{font:10px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0 0 12px;border-bottom:1px solid var(--line-soft);padding-bottom:8px}
+  .slot{display:grid;grid-template-columns:12px 1fr 108px;gap:9px;align-items:center;margin-bottom:7px}
+  .slot .sw{width:12px;height:12px;display:block;border:1px solid rgba(255,255,255,.15)}
+  .slot .nm{font:12px/1 var(--mono)}
+  .slot .modes{display:flex;gap:3px}
+  .slot .modes button{flex:1;background:transparent;border:1px solid var(--line);color:var(--dim);padding:5px 0;font:10px/1 var(--mono);cursor:pointer}
+  .slot .modes button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .rule-row{display:grid;grid-template-columns:88px 1fr 30px;gap:9px;align-items:center;margin-bottom:10px}
+  .rule-row label{font:11px/1 var(--mono);color:var(--dim)}
+  .rule-row output{font:12px/1 var(--mono);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;height:2px;background:var(--line);appearance:none;-webkit-appearance:none;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:11px;height:15px;background:var(--accent);border:0;cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:11px;height:15px;background:var(--accent);border:0;border-radius:0;cursor:pointer}
+  .maps{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-height:210px;overflow:auto;padding-right:4px}
+  .mapcard{border:1px solid var(--line);background:var(--bg);padding:8px;cursor:pointer;font:10px/1.3 var(--mono);color:var(--dim)}
+  .mapcard.on{border-color:var(--accent);color:var(--ink)}
+  .mapcard canvas{width:100%;height:auto;display:block;margin-bottom:6px;image-rendering:pixelated;background:#0B0D11}
+  .actions{display:flex;gap:9px;margin-top:18px}
+  .actions .btn{flex:1;text-align:center;justify-content:center}
+  .gamewrap{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:16px}
+  .arena{position:relative;border:1px solid var(--line);min-width:0;line-height:0}
+  canvas#cv{display:block;width:100%;height:auto;background:var(--panel);touch-action:none;cursor:crosshair;image-rendering:pixelated}
+  .countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(11,13,17,.82);font:700 84px/1 var(--serif);color:var(--accent);letter-spacing:.05em}
+  .pausebox,.resultbox{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(11,13,17,.92);line-height:1.4}
+  .pausebox h3,.resultbox h3{font:700 30px/1 var(--serif);letter-spacing:.08em;margin:0}
+  .pausebox .btn,.resultbox .btn{min-width:230px;text-align:center;justify-content:center}
+  .resultbox .win{font:11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .side{border-left:1px solid var(--line);padding-left:14px;min-width:0}
+  .clock{font:22px/1 var(--mono);margin:0 0 3px;font-variant-numeric:tabular-nums}
+  .clock small{font-size:10px;color:var(--faint);letter-spacing:.14em}
+  .team{display:grid;grid-template-columns:11px 1fr auto;gap:7px;align-items:center;margin-bottom:8px}
+  .team .sw{width:11px;height:11px;display:block;border:1px solid rgba(255,255,255,.12)}
+  .team .nm{font:11px/1 var(--mono);color:var(--dim)}
+  .team .nm em{font-style:normal;color:var(--faint);font-size:9px;margin-left:4px}
+  .team .ct{font:12px/1 var(--mono);font-variant-numeric:tabular-nums}
+  .team .bar{grid-column:2/4;height:2px;background:var(--line-soft);margin-top:-2px}
+  .team .bar i{display:block;height:2px}
+  .keys{font:10px/1.7 var(--mono);color:var(--faint);margin-top:12px}
+  .keys b{color:var(--dim);font-weight:400}
+  .share{position:absolute;left:0;right:0;bottom:0;height:8px;display:flex;background:var(--line-soft)}
+  .share i{display:block;height:100%}
+  .opts{max-width:520px;margin:0 auto}
+  .opt-row{display:grid;grid-template-columns:140px 1fr 40px;gap:12px;align-items:center;margin-bottom:16px}
+  .opt-row label{font:12px/1 var(--mono);color:var(--dim)}
+  .opt-row output{font:12px/1 var(--mono);text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+  .about{font:13px/1.85 var(--sans);color:var(--dim);max-width:640px}
+  .about h2{font:700 17px/1 var(--serif);color:var(--ink);margin:20px 0 8px}
+  .about p{margin:0 0 10px}
+  .about code{font:12px/1 var(--mono);color:var(--accent)}
+  .note{font:10px/1.5 var(--mono);color:var(--faint);margin-top:14px}
+  footer{border-top:1px solid var(--line);padding-top:9px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font:10px/1.4 var(--mono);color:var(--faint)}
   @media(max-width:820px){
-    main{grid-template-columns:1fr}
-    aside{border-left:0;border-top:1px solid var(--line);padding:13px 0 0}
-    .sub{margin-left:0;text-align:left;max-width:none}
-    .team{grid-template-columns:11px 1fr auto}
+    .setup{grid-template-columns:1fr}
+    .gamewrap{grid-template-columns:1fr}
+    .side{border-left:0;border-top:1px solid var(--line);padding:12px 0 0}
+    .tag{margin-left:0;text-align:left;max-width:none}
+    .opts .opt-row{grid-template-columns:110px 1fr 36px}
   }
   @media(max-width:420px){
-    .shell{padding:14px 12px 12px}
-    h1{font-size:23px}
-    .clock{font-size:19px}
+    .shell{padding:14px 11px 12px}
+    h1{font-size:24px}
+    .panel{padding:16px}
+    .countdown{font-size:60px}
   }
 </style>
 </head>
 <body>
 <div class="shell">
   <header>
-    <h1>液态战争</h1>
-    <span class="kicker">Liquid War / Field Exercise</span>
-    <p class="sub">移动你的光标，让粒子沿最短路径奔向你。把光标推过敌阵，背后的人会被同化。</p>
+    <h1>液态战争<small>LIQUID WAR · FIELD EXERCISE</small></h1>
+    <span class="tag">距离场梯度下降 · 五参数战斗模型 · 粒子守恒 · 无服务端</span>
   </header>
 
   <main>
-    <section class="arena" id="arena">
-      <canvas id="cv" width="960" height="600" aria-label="液态战争战场"></canvas>
-      <div class="banner" id="banner"></div>
-      <div class="hint" id="hint">点击或拖动移动琥珀光标 · WASD 微调</div>
+    <section id="view-menu" class="view">
+      <div class="panel">
+        <p class="phead">Main Menu</p>
+        <div class="menu">
+          <div class="name"><label for="pname">Name</label><input id="pname" type="text" maxlength="12" value="Player"></div>
+          <button class="btn primary" id="btn-single">Single Player <span class="arrow">→</span></button>
+          <button class="btn" id="btn-options">Options <span class="arrow">→</span></button>
+          <button class="btn" id="btn-about">About <span class="arrow">→</span></button>
+        </div>
+        <p class="note">基于 Liquid War 5 规则复刻：通过光标引导整支液体军队，包夹并同化对手。</p>
+      </div>
     </section>
 
-    <aside>
-      <p class="sect">对局时间</p>
-      <p class="clock" id="clock">03:00 <small>REMAIN</small></p>
-      <div class="rule"></div>
-      <p class="sect">兵力分布</p>
-      <div id="teams"></div>
-      <div class="rule"></div>
-      <p class="sect">控制</p>
-      <div class="ctl">
-        <button id="pause" type="button">暂停</button>
-        <button id="restart" type="button">重开</button>
-        <select id="tc" aria-label="队伍数量">
-          <option value="3">3 队</option>
-          <option value="4" selected>4 队</option>
-          <option value="5">5 队</option>
-          <option value="6">6 队</option>
-        </select>
+    <section id="view-setup" class="view hidden">
+      <div class="panel">
+        <p class="phead">Single Player · Setup</p>
+        <div class="setup">
+          <div class="col">
+            <p class="sect">Teams</p>
+            <div id="slots"></div>
+            <p class="sect" style="margin-top:18px">Rules</p>
+            <div id="rules"></div>
+          </div>
+          <div class="col">
+            <p class="sect">Select Map</p>
+            <div class="maps" id="maps"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btn-setup-back">← Back</button>
+          <button class="btn primary" id="btn-start">Start Game →</button>
+        </div>
       </div>
-      <p class="keys"><b>WASD / ↑←↓→</b> 微调光标<br><b>空格</b> 暂停 · <b>R</b> 重开<br><b>1—6</b> 切换队伍数</p>
-    </aside>
+    </section>
+
+    <section id="view-game" class="view hidden">
+      <div class="gamewrap">
+        <div class="arena">
+          <canvas id="cv" width="160" height="100" aria-label="液态战争战场"></canvas>
+          <div class="countdown hidden" id="countdown"></div>
+          <div class="pausebox hidden" id="pausebox">
+            <h3>PAUSED</h3>
+            <button class="btn" id="btn-resume">Resume</button>
+            <div style="width:230px"><div class="opt-row" style="grid-template-columns:88px 1fr 30px;gap:8px;margin:0"><label>Cursor</label><input type="range" id="pause-cursor" min="1" max="8" step="1" value="4"><output id="pause-cursor-v">4</output></div></div>
+            <button class="btn" id="btn-leave">Leave Game</button>
+          </div>
+          <div class="resultbox hidden" id="resultbox">
+            <span class="win" id="result-reason">DOMINATION</span>
+            <h3 id="result-title">WIN</h3>
+            <button class="btn" id="btn-again">Play Again</button>
+            <button class="btn" id="btn-result-menu">Main Menu</button>
+          </div>
+          <div class="share" id="share"></div>
+        </div>
+        <aside class="side">
+          <p class="sect">Clock</p>
+          <p class="clock" id="clock">03:00 <small>REMAIN</small></p>
+          <p class="sect" style="margin-top:14px">Forces</p>
+          <div id="teams"></div>
+          <p class="keys"><b>WASD / ↑←↓→</b> 移动光标<br><b>鼠标 / 触摸</b> 指向目标<br><b>Esc / 空格</b> 暂停<br><b>R</b> 重开</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-options" class="view hidden">
+      <div class="panel opts">
+        <p class="phead">Options</p>
+        <div class="opt-row"><label for="opt-cursor">Cursor Speed</label><input type="range" id="opt-cursor" min="1" max="8" step="1" value="4"><output id="opt-cursor-v">4</output></div>
+        <div class="opt-row"><label for="opt-music">Music Volume</label><input type="range" id="opt-music" min="0" max="100" step="1" value="50"><output id="opt-music-v">50</output></div>
+        <div class="opt-row"><label for="opt-sfx">SFX Volume</label><input type="range" id="opt-sfx" min="0" max="100" step="1" value="70"><output id="opt-sfx-v">70</output></div>
+        <div class="opt-row"><label for="opt-water">Water Volume</label><input type="range" id="opt-water" min="0" max="100" step="1" value="15"><output id="opt-water-v">15</output></div>
+        <div class="actions"><button class="btn" id="btn-opts-back">← Back</button></div>
+      </div>
+    </section>
+
+    <section id="view-about" class="view hidden">
+      <div class="panel">
+        <p class="phead">About</p>
+        <div class="about">
+          <p>《液态战争》是 Thomas Colcombet 于 1995 年发明最短路径算法的经典作品，GNU Liquid War 6 为其官方续作。本作按 <code>Liquid War 5</code> 规则复刻单人网页游玩体验。</p>
+          <h2>怎么玩</h2>
+          <p>你只能移动光标。粒子会沿绕过障碍的最短路径自动向你的光标集结。当两军相遇，只有朝着己方光标方向推进的一方才能攻击；背对或侧对者无法反击，会被逐个同化。把光标推过敌阵、从背后包抄，是取胜关键。</p>
+          <h2>规则参数</h2>
+          <p><code>Attack</code> 正面伤害、<code>Defense</code> 友军补血、<code>Health</code> 同化后重置生命、<code>Influence</code> 人数优势加成、<code>Army Size</code> 战场填充率。数值越高效果越强，Influence=8 为中性。</p>
+          <h2>算法</h2>
+          <p>每队光标做一次 8 邻域广度优先搜索得到距离场，粒子沿梯度按 12 方向优先级移动。战斗、补血与同化均为确定性纯函数，粒子总数恒定，只转移归属。</p>
+          <p class="note">复刻范围：单人模式完整体验。联机对战需服务端，超出纯静态站点范围，未包含。</p>
+        </div>
+        <div class="actions"><button class="btn" id="btn-about-back">← Back</button></div>
+      </div>
+    </section>
   </main>
 
   <footer>
-    <span data-build>v1.0.1 · 2026-11-27 09:14</span>
-    <span>距离场 BFS + 梯度下降 · 粒子守恒 · 无服务端</span>
+    <span data-build>v2.0.0 · 2026-11-27 10:05</span>
+    <span>LW5 战斗模型 · 12 方向梯度 · 确定性单测</span>
   </footer>
 </div>
 
@@ -119,33 +219,74 @@
 (function (global) {
   'use strict';
   var INF = 1000000000;
-  var NEI = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
+  var MAX_HP = 16384;
+  var DIR_X = [0,1,1,1,1,0,0,-1,-1,-1,-1,0];
+  var DIR_Y = [-1,-1,0,0,1,1,1,1,0,0,-1,-1];
+  var MOVE_DIR = [
+    [[0,1,10,2,9],[1,2,0,4,10],[2,1,4,0,5],[3,4,1,5,0],[4,5,3,7,1],[5,4,7,3,8],
+     [6,7,4,8,3],[7,8,6,10,4],[8,7,10,6,11],[9,10,7,11,5],[10,11,9,1,7],[11,10,1,9,2]],
+    [[0,1,10,2,9],[1,0,2,10,4],[2,1,4,0,5],[3,4,1,5,0],[4,3,5,1,7],[5,4,7,3,8],
+     [6,7,4,8,3],[7,6,8,4,10],[8,7,10,6,11],[9,10,7,11,5],[10,9,11,7,1],[11,10,1,9,2]]
+  ];
+  var NEI8 = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
+  var FILL_TABLE = [1,2,3,4,5,6,8,9,10,12,14,16,18,20,22,24,25,27,29,31,33,36,40,45,50,55,60,65,70,75,80,90,99];
   var TEAM_COLORS = ['#E8A33D','#E35D4F','#35B0A3','#EDE3C8','#8FA84B','#C9758F'];
   var TEAM_NAMES  = ['琥珀','赤陶','青碧','素白','苔绿','绛粉'];
+  var DEFAULT = { attack:8, defense:8, health:8, influence:8, army:16, time:180 };
 
   function idx(gw, x, y) { return y * gw + x; }
   function inB(gw, gh, x, y) { return x >= 0 && y >= 0 && x < gw && y < gh; }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function makeRng(seed) { var s = seed >>> 0; return function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+  function fixsqrt(x) { return x <= 0 ? 0 : Math.floor(Math.sqrt(x / 65536) * 65536); }
 
-  function makeRng(seed) {
-    var s = seed >>> 0;
-    return function () {
-      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-      return s / 4294967296;
-    };
+  // 纯函数：五参数战斗系数（对齐 LW5 fighter.c）
+  function computeCombatParams(active, playing, totalArmy, atkCfg, defCfg, hpCfg, influence) {
+    var n = active.length;
+    var attack = new Int32Array(n).fill(1), defense = new Int32Array(n).fill(1), health = new Int32Array(n).fill(1);
+    if (totalArmy <= 0 || playing <= 0) return { attack: attack, defense: defense, health: health };
+    for (var i = 0; i < n; i++) {
+      var coef = active[i] * playing - totalArmy;
+      coef *= 256; coef /= totalArmy;
+      if (coef > 256) coef = 256;
+      coef *= (influence - 8) * (influence - 8); coef /= 64;
+      if (influence < 8) coef = -coef;
+      if (coef < 0) coef /= 2;
+      coef += 256;
+      var p = clamp(atkCfg, 0, 31), q = clamp(defCfg, 0, 31), r = clamp(hpCfg, 0, 31);
+      attack[i] = clamp(Math.floor(coef * fixsqrt(fixsqrt(Math.pow(2, p))) / (256 * 8)), 1, MAX_HP - 1);
+      defense[i] = clamp(Math.floor(coef * fixsqrt(fixsqrt(Math.pow(2, q))) / (256 * 256)), 1, MAX_HP - 1);
+      health[i] = clamp(Math.floor(coef * fixsqrt(fixsqrt(Math.pow(2, r))) / (256 * 4)), 1, MAX_HP - 1);
+    }
+    return { attack: attack, defense: defense, health: health };
   }
+  // 纯函数：一次攻击结果 {health,team,converted}
+  function combatOutcome(targetTeam, targetHealth, attackerTeam, isFront, attackPower, newHealth) {
+    if (targetTeam === attackerTeam) return { health: targetHealth, team: targetTeam, converted: false };
+    var dmg = isFront ? attackPower : Math.max(1, attackPower >> 4);
+    var hp = targetHealth - dmg, team = targetTeam;
+    if (hp < 0) {
+      // LW5 语义：反复加 newHealth 直到非负（改队即在此发生）。
+      // 用取模一次算出，避免极端参数下大伤害导致循环截断把粒子"打死"破坏守恒。
+      var nh = Math.max(1, newHealth);
+      var over = (-hp) % nh;
+      hp = over === 0 ? 0 : nh - over;
+      team = attackerTeam;
+    }
+    return { health: hp, team: team, converted: team !== targetTeam };
+  }
+  function healOutcome(health, defensePower) { return Math.min(MAX_HP - 1, health + defensePower); }
 
-  // 纯函数：从 (sx,sy) 出发的 8 邻域 BFS 距离场；障碍格不可通行，禁止穿角
+  // 纯函数：8 邻域 BFS 距离场，障碍不可通行、禁止穿角
   function computeDistanceField(blocked, gw, gh, sx, sy) {
-    var dist = new Int32Array(gw * gh);
-    dist.fill(INF);
+    var dist = new Int32Array(gw * gh); dist.fill(INF);
     if (!inB(gw, gh, sx, sy) || blocked[idx(gw, sx, sy)]) return dist;
     var q = new Int32Array(gw * gh), head = 0, tail = 0;
-    var start = idx(gw, sx, sy);
-    dist[start] = 0; q[tail++] = start;
+    var start = idx(gw, sx, sy); dist[start] = 0; q[tail++] = start;
     while (head < tail) {
       var cur = q[head++], cx = cur % gw, cy = (cur - cx) / gw, d = dist[cur] + 1;
       for (var k = 0; k < 8; k++) {
-        var ox = NEI[k][0], oy = NEI[k][1], nx = cx + ox, ny = cy + oy;
+        var ox = NEI8[k][0], oy = NEI8[k][1], nx = cx + ox, ny = cy + oy;
         if (!inB(gw, gh, nx, ny)) continue;
         var ni = idx(gw, nx, ny);
         if (blocked[ni] || dist[ni] <= d) continue;
@@ -155,15 +296,14 @@
     }
     return dist;
   }
-
-  // 纯函数：距离场梯度（指向距离下降方向，单位向量）；局部极小返回 (0,0)
+  // 纯函数：距离场梯度（指向下降方向），返回单位向量与 12 方向索引
   function gradientAt(field, gw, gh, cx, cy) {
-    if (!inB(gw, gh, cx, cy)) return { x: 0, y: 0 };
+    if (!inB(gw, gh, cx, cy)) return { x: 0, y: 0, dir: 0 };
     var here = field[idx(gw, cx, cy)];
-    if (here >= INF) return { x: 0, y: 0 };
+    if (here >= INF) return { x: 0, y: 0, dir: 0 };
     var vx = 0, vy = 0;
     for (var k = 0; k < 8; k++) {
-      var ox = NEI[k][0], oy = NEI[k][1], nx = cx + ox, ny = cy + oy;
+      var ox = NEI8[k][0], oy = NEI8[k][1], nx = cx + ox, ny = cy + oy;
       if (!inB(gw, gh, nx, ny)) continue;
       var d = field[idx(gw, nx, ny)];
       if (d >= INF || d >= here) continue;
@@ -171,380 +311,647 @@
       vx += ox; vy += oy;
     }
     var len = Math.hypot(vx, vy);
-    if (len < 1e-9) return { x: 0, y: 0 };
-    return { x: vx / len, y: vy / len };
+    if (len < 1e-9) return { x: 0, y: 0, dir: 0 };
+    vx /= len; vy /= len;
+    return { x: vx, y: vy, dir: vecToDir(vx, vy) };
+  }
+  function vecToDir(vx, vy) {
+    var best = 0, bestDot = -2;
+    for (var d = 0; d < 12; d++) {
+      var l = Math.hypot(DIR_X[d], DIR_Y[d]);
+      var dot = (vx * DIR_X[d] + vy * DIR_Y[d]) / l;
+      if (dot > bestDot) { bestDot = dot; best = d; }
+    }
+    return best;
   }
 
-  // 纯函数：同化规则。a,b = {team,x,y,dirX,dirY}
-  // 返回 0 无同化 / 1 a 同化 b / -1 b 同化 a
-  // 规则：朝着对方且对方未朝着自己（背对/侧对）的一方同化对方；双方都迎击或都背对则僵持
-  function resolveAssimilation(a, b, eps) {
-    if (a.team === b.team) return 0;
-    var dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
-    if (len < 1e-6) return 0;
-    var ux = dx / len, uy = dy / len;
-    var faceA = a.dirX * ux + a.dirY * uy;
-    var faceB = -(b.dirX * ux + b.dirY * uy);
-    var e = (eps === undefined) ? 0.12 : eps;
-    var aF = faceA > e, bF = faceB > e;
-    if (aF && !bF) return 1;
-    if (bF && !aF) return -1;
-    return 0;
+  function rect(b, gw, gh, x0, y0, x1, y1) {
+    for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) if (inB(gw, gh, x, y)) b[idx(gw, x, y)] = 1;
   }
-
-  // 纯函数：胜负判定
+  function disc(b, gw, gh, cx, cy, r) {
+    for (var y = cy - r; y <= cy + r; y++) for (var x = cx - r; x <= cx + r; x++)
+      if (inB(gw, gh, x, y) && (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r) b[idx(gw, x, y)] = 1;
+  }
+  var MAP_DEFS = [
+    { id:'classic', name:'经典战场', build:function(b,gw,gh){
+      var xL=Math.round(gw*0.33), xR=Math.round(gw*0.67), c=Math.round(gh*0.42), d=Math.round(gh*0.58);
+      rect(b,gw,gh,xL,2,xL+1,c); rect(b,gw,gh,xL,d,xL+1,gh-3);
+      rect(b,gw,gh,xR,2,xR+1,c); rect(b,gw,gh,xR,d,xR+1,gh-3);
+      disc(b,gw,gh,Math.round(gw/2),Math.round(gh/2),Math.round(gw*0.035));
+    }},
+    { id:'columns', name:'列柱阵', build:function(b,gw,gh){
+      for (var i=1;i<=5;i++) for (var j=1;j<=3;j++) disc(b,gw,gh,Math.round(gw*i/6),Math.round(gh*j/4),Math.round(gw*0.028));
+    }},
+    { id:'cross', name:'十字要塞', build:function(b,gw,gh){
+      var cx=Math.round(gw/2),cy=Math.round(gh/2);
+      rect(b,gw,gh,cx-1,2,cx+1,Math.round(gh*0.34)); rect(b,gw,gh,cx-1,Math.round(gh*0.66),cx+1,gh-3);
+      rect(b,gw,gh,2,cy-1,Math.round(gw*0.3),cy+1); rect(b,gw,gh,Math.round(gw*0.7),cy-1,gw-3,cy+1);
+    }},
+    { id:'open', name:'开阔水域', build:function(b,gw,gh){
+      disc(b,gw,gh,Math.round(gw/2),Math.round(gh/2),Math.round(gw*0.07));
+      disc(b,gw,gh,Math.round(gw*0.22),Math.round(gh*0.5),Math.round(gw*0.03));
+      disc(b,gw,gh,Math.round(gw*0.78),Math.round(gh*0.5),Math.round(gw*0.03));
+    }},
+    { id:'twin', name:'双子回廊', build:function(b,gw,gh){
+      rect(b,gw,gh,Math.round(gw*0.42),2,Math.round(gw*0.43),Math.round(gh*0.42));
+      rect(b,gw,gh,Math.round(gw*0.57),2,Math.round(gw*0.58),Math.round(gh*0.42));
+      rect(b,gw,gh,Math.round(gw*0.42),Math.round(gh*0.58),Math.round(gw*0.43),gh-3);
+      rect(b,gw,gh,Math.round(gw*0.57),Math.round(gh*0.58),Math.round(gw*0.58),gh-3);
+      disc(b,gw,gh,Math.round(gw/2),Math.round(gh/2),Math.round(gw*0.03));
+    }},
+    { id:'maze', name:'迂回迷宫', build:function(b,gw,gh){
+      rect(b,gw,gh,Math.round(gw*0.25),Math.round(gh*0.25),Math.round(gw*0.55),Math.round(gh*0.27));
+      rect(b,gw,gh,Math.round(gw*0.45),Math.round(gh*0.25),Math.round(gw*0.47),Math.round(gh*0.75));
+      rect(b,gw,gh,Math.round(gw*0.45),Math.round(gh*0.73),Math.round(gw*0.75),Math.round(gh*0.75));
+      disc(b,gw,gh,Math.round(gw*0.2),Math.round(gh*0.72),Math.round(gw*0.03));
+      disc(b,gw,gh,Math.round(gw*0.8),Math.round(gh*0.28),Math.round(gw*0.03));
+    }}
+  ];
+  function buildArena(gw, gh, mapId) {
+    var b = new Uint8Array(gw * gh);
+    rect(b,gw,gh,0,0,gw-1,1); rect(b,gw,gh,0,gh-2,gw-1,gh-1);
+    rect(b,gw,gh,0,0,1,gh-1); rect(b,gw,gh,gw-2,0,gw-1,gh-1);
+    var def = MAP_DEFS[0];
+    for (var i = 0; i < MAP_DEFS.length; i++) if (MAP_DEFS[i].id === mapId) def = MAP_DEFS[i];
+    def.build(b, gw, gh);
+    return b;
+  }
+  function spawnSpots(gw, gh, n) {
+    var grid = [[1/6,1/4],[1/2,1/4],[5/6,1/4],[1/6,3/4],[1/2,3/4],[5/6,3/4]];
+    var out = [];
+    for (var i = 0; i < n; i++) { var p = grid[i % 6]; out.push([Math.round(gw*p[0]),Math.round(gh*p[1])]); }
+    return out;
+  }
+  function findPassableNear(blocked, gw, gh, sx, sy) {
+    if (inB(gw,gh,sx,sy) && !blocked[idx(gw,sx,sy)]) return [sx,sy];
+    for (var r = 1; r < Math.max(gw, gh); r++) {
+      for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+        var x = sx + dx, y = sy + dy;
+        if (inB(gw,gh,x,y) && !blocked[idx(gw,x,y)]) return [x,y];
+      }
+    }
+    return [sx,sy];
+  }
   function judgeWinner(counts, total, timeLeft) {
-    for (var t = 0; t < counts.length; t++) if (counts[t] === total) return { over: true, winner: t, reason: 'domination' };
+    for (var t = 0; t < counts.length; t++) if (counts[t] === total) return { over:true, winner:t, reason:'domination' };
     if (timeLeft <= 0) {
       var best = 0;
       for (var i = 1; i < counts.length; i++) if (counts[i] > counts[best]) best = i;
-      return { over: true, winner: best, reason: 'timeout' };
+      return { over:true, winner:best, reason:'timeout' };
     }
-    return { over: false, winner: -1, reason: '' };
-  }
-
-  // 纯函数：战场障碍（边框＋两道中央缺口墙＋中心块＋四根柱子）
-  function buildArena(gw, gh) {
-    var blocked = new Uint8Array(gw * gh);
-    function rect(x0, y0, x1, y1) {
-      for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++)
-        if (inB(gw, gh, x, y)) blocked[idx(gw, x, y)] = 1;
-    }
-    rect(0, 0, gw - 1, 1); rect(0, gh - 2, gw - 1, gh - 1);
-    rect(0, 0, 1, gh - 1); rect(gw - 2, 0, gw - 1, gh - 1);
-    var xL = Math.round(gw * 0.33), xR = Math.round(gw * 0.67);
-    rect(xL, 2, xL + 1, Math.round(gh * 0.42));
-    rect(xL, Math.round(gh * 0.58), xL + 1, gh - 3);
-    rect(xR, 2, xR + 1, Math.round(gh * 0.42));
-    rect(xR, Math.round(gh * 0.58), xR + 1, gh - 3);
-    var cx = Math.round(gw / 2), cy = Math.round(gh / 2);
-    rect(cx - 3, cy - 2, cx + 3, cy + 2);
-    var pxs = [Math.round(gw * 0.18), Math.round(gw * 0.82)];
-    var pys = [Math.round(gh * 0.22), Math.round(gh * 0.78)];
-    for (var a = 0; a < 2; a++) for (var b = 0; b < 2; b++) rect(pxs[a] - 2, pys[b] - 2, pxs[a] + 2, pys[b] + 2);
-    return blocked;
-  }
-
-  function cursorSpots(gw, gh, n) {
-    var all = [[0.10,0.50],[0.90,0.50],[0.50,0.10],[0.50,0.90],[0.16,0.16],[0.84,0.84]];
-    return all.slice(0, n).map(function (p) { return [Math.round(gw * p[0]), Math.round(gh * p[1])]; });
+    return { over:false, winner:-1, reason:'' };
   }
 
   function createWorld(opts) {
     opts = opts || {};
-    var gw = opts.gw || 96, gh = opts.gh || 60, cell = opts.cell || 10;
-    var n = Math.max(2, Math.min(6, opts.teams || 4));
-    var per = opts.perTeam || 340;
-    var blocked = buildArena(gw, gh);
-    var spots = cursorSpots(gw, gh, n);
-    var teams = spots.map(function (s, t) {
-      return { id: t, name: TEAM_NAMES[t], color: TEAM_COLORS[t],
-        gx: s[0], gy: s[1], x: s[0] * cell + cell / 2, y: s[1] * cell + cell / 2,
-        tx: s[0] * cell + cell / 2, ty: s[1] * cell + cell / 2, isAI: t !== 0 };
-    });
-    var total = per * n;
-    var world = {
-      gw: gw, gh: gh, cell: cell, width: gw * cell, height: gh * cell,
-      blocked: blocked, teams: teams, nTeams: n, total: total, perTeam: per,
-      px: new Float32Array(total), py: new Float32Array(total), pteam: new Uint8Array(total),
-      pdx: new Float32Array(total), pdy: new Float32Array(total), lastConv: new Int32Array(total).fill(-1),
-      counts: new Int32Array(n).fill(per), fields: [], dirty: new Uint8Array(n).fill(1),
-      tick: 0, timeLeft: (opts.time === undefined ? 180 : opts.time), rng: (opts.seed || 20261126) >>> 0,
-      result: null, seed: opts.seed || 20261126
+    var gw = opts.gw || 160, gh = opts.gh || 100;
+    var n = clamp(opts.teams || 4, 2, 6);
+    var mapId = opts.map || 'classic';
+    var blocked = buildArena(gw, gh, mapId);
+    var spots = spawnSpots(gw, gh, n);
+    var cfg = {
+      attack: clamp(opts.attack === undefined ? DEFAULT.attack : opts.attack, 0, 32),
+      defense: clamp(opts.defense === undefined ? DEFAULT.defense : opts.defense, 0, 32),
+      health: clamp(opts.health === undefined ? DEFAULT.health : opts.health, 0, 32),
+      influence: clamp(opts.influence === undefined ? DEFAULT.influence : opts.influence, 0, 32),
+      army: clamp(opts.army === undefined ? DEFAULT.army : opts.army, 0, 32)
     };
-    var rnd = makeRng(world.seed);
+    var teams = spots.map(function (s, t) {
+      var p = findPassableNear(blocked, gw, gh, s[0], s[1]);
+      return { id:t, name:TEAM_NAMES[t], color:TEAM_COLORS[t], gx:p[0], gy:p[1],
+        x:p[0]+0.5, y:p[1]+0.5, tx:p[0]+0.5, ty:p[1]+0.5, isAI:t !== 0, active:true };
+    });
+    var room = 0;
+    for (var i = 0; i < gw*gh; i++) if (!blocked[i]) room++;
+    var fill = FILL_TABLE[cfg.army];
+    var per = Math.max(1, Math.floor(room * fill / 100 / n));
+    var total = per * n;
+    var w = {
+      gw:gw, gh:gh, width:gw, height:gh, cell:1, blocked:blocked, teams:teams, nTeams:n,
+      total:total, perTeam:per, cfg:cfg, room:room, map:mapId,
+      px:new Int16Array(total), py:new Int16Array(total),
+      php:new Int16Array(total), pteam:new Int8Array(total), pdir:new Int8Array(total),
+      places:new Int32Array(gw*gh).fill(-1),
+      counts:new Int32Array(n).fill(per), fields:[], dirty:new Uint8Array(n).fill(1),
+      clock:2, tick:0, timeLeft:(opts.time === undefined ? DEFAULT.time : opts.time),
+      rng:(opts.seed || 20261127) >>> 0, seed:opts.seed || 20261127,
+      result:null, stats:{ attacks:0, converts:0, heals:0 }, active:new Int32Array(n),
+      cursorSpeed:opts.cursorSpeed || 4, ai:[]
+    };
+    var rnd = makeRng(w.seed);
     for (var t = 0; t < n; t++) {
-      var tm = teams[t];
-      for (var k = 0; k < per; k++) {
-        var ang = rnd() * 6.2831853, rad = 12 + rnd() * 46;
-        var x = tm.x + Math.cos(ang) * rad, y = tm.y + Math.sin(ang) * rad;
-        x = Math.max(cell * 2, Math.min(world.width - cell * 2, x));
-        y = Math.max(cell * 2, Math.min(world.height - cell * 2, y));
-        if (blocked[idx(gw, Math.floor(x / cell), Math.floor(y / cell))]) { x = tm.x; y = tm.y; }
-        var i = t * per + k;
-        world.px[i] = x; world.py[i] = y; world.pteam[i] = t;
+      var sp = teams[t];
+      var xmin=sp.gx, xmax=sp.gx, ymin=sp.gy, ymax=sp.gy, placed=0;
+      while (placed < per) {
+        var base = t * per + placed;
+        var x=xmin; while (x<=xmax && placed<per) { if (place(w,x,ymin,t,t*per+placed)) placed++; x++; }
+        if (xmax<gw-2) xmax++;
+        var y=ymin; while (y<=ymax && placed<per) { if (place(w,xmax,y,t,t*per+placed)) placed++; y++; }
+        if (ymax<gh-2) ymax++;
+        x=xmax; while (x>=xmin && placed<per) { if (place(w,x,ymax,t,t*per+placed)) placed++; x--; }
+        if (xmin>1) xmin--;
+        y=ymax; while (y>=ymin && placed<per) { if (place(w,xmin,y,t,t*per+placed)) placed++; y--; }
+        if (ymin>1) ymin--;
+        if (xmin<=1 && xmax>=gw-2 && ymin<=1 && ymax>=gh-2) break;
       }
+      var sx=0, sy=0, cnt=0;
+      for (var k=0;k<total;k++) if (w.pteam[k]===t && w.php[k]>=0) { sx+=w.px[k]; sy+=w.py[k]; cnt++; }
+      if (cnt>0) { var cp=findPassableNear(blocked,gw,gh,Math.round(sx/cnt),Math.round(sy/cnt)); teams[t].gx=cp[0]; teams[t].gy=cp[1]; teams[t].x=cp[0]+0.5; teams[t].y=cp[1]+0.5; teams[t].tx=teams[t].x; teams[t].ty=teams[t].y; }
+      w.ai.push({ tx:teams[t].x, ty:teams[t].y, moveLeft:0, waitLeft:(seedMix(w.seed,t)%17), rng:(12345 + t*7919 + seedMix(w.seed,t)*2654435761)>>>0 });
     }
-    for (var q = 0; q < n; q++) world.fields.push(computeDistanceField(blocked, gw, gh, teams[q].gx, teams[q].gy));
-    return world;
+    w.counts.fill(0);
+    for (var k2=0;k2<total;k2++) if (w.php[k2]>=0) w.counts[w.pteam[k2]]++;
+    for (var q=0;q<n;q++) w.fields.push(computeDistanceField(blocked,gw,gh,teams[q].gx,teams[q].gy));
+    return w;
   }
-
-  function nextRandom(w) {
-    w.rng = (Math.imul(w.rng, 1664525) + 1013904223) >>> 0;
-    return w.rng / 4294967296;
+  function place(w, x, y, team, fi) {
+    var gw=w.gw, gh=w.gh;
+    if (fi === undefined || fi < 0 || fi >= w.total) return false;
+    if (x<1||y<1||x>=gw-1||y>=gh-1) return false;
+    var i = idx(gw,x,y);
+    if (w.blocked[i] || w.places[i]>=0) return false;
+    w.px[fi]=x; w.py[fi]=y; w.php[fi]=MAX_HP-1; w.pteam[fi]=team; w.places[i]=fi;
+    return true;
   }
+  function nextRandom(w) { w.rng=(Math.imul(w.rng,1664525)+1013904223)>>>0; return w.rng/4294967296; }
+  function seedMix(seed, t) { var h=(seed ^ Math.imul(t+1, 0x9e3779b9))>>>0; h^=h>>>16; h=Math.imul(h,0x85ebca6b)>>>0; h^=h>>>13; return h>>>0; }
+  function aiRand(st) { st.rng^=st.rng<<13; st.rng^=st.rng>>>7; st.rng^=st.rng<<17; st.rng>>>=0; return st.rng/4294967296; }
 
-  function aiCursorStep(w, dt) {
-    for (var t = 1; t < w.nTeams; t++) {
-      var weak = -1, wc = Infinity;
-      for (var e = 0; e < w.nTeams; e++) if (e !== t && w.counts[e] < wc) { wc = w.counts[e]; weak = e; }
-      var et = w.teams[weak];
-      var tm = w.teams[t];
-      tm.tx = Math.max(w.cell * 2, Math.min(w.width - w.cell * 2, et.x + Math.sin((w.tick + t * 37) * 0.01) * w.cell * 6));
-      tm.ty = Math.max(w.cell * 2, Math.min(w.height - w.cell * 2, et.y + Math.cos((w.tick + t * 23) * 0.013) * w.cell * 6));
-    }
-  }
-
-  function moveCursors(w, dt) {
-    var speed = w.cell * 24;
-    for (var t = 0; t < w.nTeams; t++) {
-      var tm = w.teams[t], dx = tm.tx - tm.x, dy = tm.ty - tm.y, len = Math.hypot(dx, dy);
-      if (len < 0.5) continue;
-      var step = Math.min(len, speed * dt);
-      dx = dx / len * step; dy = dy / len * step;
-      var nx = Math.max(w.cell * 2, Math.min(w.width - w.cell * 2, tm.x + dx));
-      var ny = Math.max(w.cell * 2, Math.min(w.height - w.cell * 2, tm.y + dy));
-      if (!w.blocked[idx(w.gw, Math.floor(nx / w.cell), Math.floor(ny / w.cell))]) { tm.x = nx; tm.y = ny; }
-      else {
-        if (!w.blocked[idx(w.gw, Math.floor(nx / w.cell), Math.floor(tm.y / w.cell))]) tm.x = nx;
-        if (!w.blocked[idx(w.gw, Math.floor(tm.x / w.cell), Math.floor(ny / w.cell))]) tm.y = ny;
+  function aiStep(w, dt) {
+    for (var t=1;t<w.nTeams;t++) {
+      var tm=w.teams[t], st=w.ai[t];
+      if (st.waitLeft>0) { st.waitLeft-=1; continue; }
+      if (st.moveLeft>0) {
+        if (Math.abs(tm.x-st.tx)<=2 && Math.abs(tm.y-st.ty)<=2) { st.moveLeft=0; st.waitLeft=40+Math.floor(aiRand(st)*80); continue; }
+        st.moveLeft-=1;
+        if (st.moveLeft===0) st.waitLeft=40+Math.floor(aiRand(st)*80);
+        moveCursorToward(w, tm, st.tx, st.ty, dt); continue;
       }
-      var gx = Math.floor(tm.x / w.cell), gy = Math.floor(tm.y / w.cell);
-      if (gx !== tm.gx || gy !== tm.gy) { tm.gx = gx; tm.gy = gy; w.dirty[t] = 1; }
-    }
-  }
-
-  function assimilate(w) {
-    var bsize = w.cell * 1.2;
-    var bw = Math.ceil(w.width / bsize), bh = Math.ceil(w.height / bsize);
-    var heads = new Int32Array(bw * bh).fill(-1), next = new Int32Array(w.total).fill(-1);
-    for (var i = 0; i < w.total; i++) {
-      var bx = Math.min(bw - 1, Math.floor(w.px[i] / bsize)), by = Math.min(bh - 1, Math.floor(w.py[i] / bsize));
-      var bi = by * bw + bx; next[i] = heads[bi]; heads[bi] = i;
-    }
-    var c2 = Math.pow(w.cell * 0.8, 2);
-    for (var a = 0; a < w.total; a++) {
-      var ax = Math.min(bw - 1, Math.floor(w.px[a] / bsize)), ay = Math.min(bh - 1, Math.floor(w.py[a] / bsize));
-      for (var oy = -1; oy <= 1; oy++) for (var ox = -1; ox <= 1; ox++) {
-        var nx = ax + ox, ny = ay + oy;
-        if (nx < 0 || ny < 0 || nx >= bw || ny >= bh) continue;
-        var j = heads[ny * bw + nx];
-        while (j !== -1) {
-          if (j > a && w.pteam[a] !== w.pteam[j] && w.lastConv[a] !== w.tick && w.lastConv[j] !== w.tick) {
-            var ddx = w.px[j] - w.px[a], ddy = w.py[j] - w.py[a];
-            if (ddx * ddx + ddy * ddy <= c2) {
-              var pa = { team: w.pteam[a], x: w.px[a], y: w.py[a], dirX: w.pdx[a], dirY: w.pdy[a] };
-              var pb = { team: w.pteam[j], x: w.px[j], y: w.py[j], dirX: w.pdx[j], dirY: w.pdy[j] };
-              var r = resolveAssimilation(pa, pb);
-              if (r === 1) {
-                var oldB = w.pteam[j]; w.pteam[j] = w.pteam[a];
-                w.counts[w.pteam[a]]++; w.counts[oldB]--; w.lastConv[j] = w.tick;
-              } else if (r === -1) {
-                var oldA = w.pteam[a]; w.pteam[a] = w.pteam[j];
-                w.counts[w.pteam[j]]++; w.counts[oldA]--; w.lastConv[a] = w.tick;
-              }
-            }
-          }
-          j = next[j];
-        }
+      var count=0, tries=0, pool=[];
+      while (tries<10000 && count<20) {
+        tries++;
+        var i=Math.floor(aiRand(st)*w.total);
+        if (w.php[i]<0 || w.pteam[i]===t) continue;
+        var dx=Math.abs(w.px[i]-tm.x), dy=Math.abs(w.py[i]-tm.y);
+        pool.push([w.px[i],w.py[i],dx+dy]); count++;
       }
+      if (!pool.length) continue;
+      pool.sort(function(a,b){return a[2]-b[2];});
+      var pick=pool[Math.floor(aiRand(st)*Math.min(5,pool.length))];
+      st.tx=pick[0]; st.ty=pick[1];
+      var dist=Math.min(100, Math.max(Math.abs(pick[0]-tm.x), Math.abs(pick[1]-tm.y)));
+      st.moveLeft=dist+5;
+      moveCursorToward(w, tm, st.tx, st.ty, dt);
     }
   }
+  function moveCursorToward(w, tm, tx, ty, dt) {
+    var speed = (4 + (w.cursorSpeed || 4)) * 2.2 * dt * 60;
+    var dx=tx-tm.x, dy=ty-tm.y, len=Math.hypot(dx,dy);
+    if (len<0.5) return;
+    var step=Math.min(len,speed); dx=dx/len*step; dy=dy/len*step;
+    var nx=clamp(tm.x+dx,2,w.gw-3), ny=clamp(tm.y+dy,2,w.gh-3);
+    if (!w.blocked[idx(w.gw,Math.floor(nx),Math.floor(ny))]) { tm.x=nx; tm.y=ny; }
+    else {
+      if (!w.blocked[idx(w.gw,Math.floor(nx),Math.floor(tm.y))]) tm.x=nx;
+      if (!w.blocked[idx(w.gw,Math.floor(tm.x),Math.floor(ny))]) tm.y=ny;
+    }
+    var gx=Math.floor(tm.x), gy=Math.floor(tm.y);
+    if (gx!==tm.gx||gy!==tm.gy) { tm.gx=gx; tm.gy=gy; w.dirty[tm.id]=1; }
+  }
+  function movePlayerCursor(w, dt) { var tm=w.teams[0]; moveCursorToward(w, tm, tm.tx, tm.ty, dt); }
 
-  // 固定步长推进一步；粒子只沿距离场梯度下降，总数守恒
   function step(w, dt) {
     if (w.result && w.result.over) return w;
-    w.tick++;
-    aiCursorStep(w, dt);
-    moveCursors(w, dt);
-    for (var t = 0; t < w.nTeams; t++) if (w.dirty[t]) {
-      w.fields[t] = computeDistanceField(w.blocked, w.gw, w.gh, w.teams[t].gx, w.teams[t].gy);
-      w.dirty[t] = 0;
+    w.tick++; w.clock++;
+    aiStep(w, dt);
+    movePlayerCursor(w, dt);
+    for (var t=0;t<w.nTeams;t++) if (w.dirty[t]) {
+      w.fields[t]=computeDistanceField(w.blocked,w.gw,w.gh,w.teams[t].gx,w.teams[t].gy);
+      w.dirty[t]=0;
     }
-    var speed = w.cell * 7.2, lo = w.cell * 2, maxX = w.width - lo, maxY = w.height - lo;
-    for (var i = 0; i < w.total; i++) {
-      var team = w.pteam[i], field = w.fields[team];
-      var gx = Math.min(w.gw - 1, Math.max(0, Math.floor(w.px[i] / w.cell)));
-      var gy = Math.min(w.gh - 1, Math.max(0, Math.floor(w.py[i] / w.cell)));
-      var g = gradientAt(field, w.gw, w.gh, gx, gy);
-      var jit = (nextRandom(w) - 0.5) * 0.42, dx = g.x, dy = g.y;
-      if (dx === 0 && dy === 0) { var ang = jit * 6.2831853; dx = Math.cos(ang) * 0.3; dy = Math.sin(ang) * 0.3; }
-      else { var c = Math.cos(jit), s = Math.sin(jit), nx = dx * c - dy * s, ny = dx * s + dy * c; dx = nx; dy = ny; }
-      w.pdx[i] = dx; w.pdy[i] = dy;
-      var x = w.px[i] + dx * speed * dt, y = w.py[i] + dy * speed * dt;
-      var ngx = Math.floor(x / w.cell), ngy = Math.floor(y / w.cell);
-      if (inB(w.gw, w.gh, ngx, ngy) && !w.blocked[idx(w.gw, ngx, ngy)]) { w.px[i] = x; w.py[i] = y; }
-      else {
-        var gx2 = Math.floor(x / w.cell), gy2 = Math.floor(w.py[i] / w.cell);
-        if (inB(w.gw, w.gh, gx2, gy2) && !w.blocked[idx(w.gw, gx2, gy2)]) w.px[i] = x;
-        var gx3 = Math.floor(w.px[i] / w.cell), gy3 = Math.floor(y / w.cell);
-        if (inB(w.gw, w.gh, gx3, gy3) && !w.blocked[idx(w.gw, gx3, gy3)]) w.py[i] = y;
+    w.active.fill(0);
+    for (var k=0;k<w.total;k++) if (w.php[k]>=0) w.active[w.pteam[k]]++;
+    var cp = computeCombatParams(w.active, w.nTeams, w.total, w.cfg.attack, w.cfg.defense, w.cfg.health, w.cfg.influence);
+    var table = (w.clock/3|0) % 2, start = (w.clock/6|0) % 12;
+    for (var fi=0; fi<w.total; fi++) {
+      if (w.php[fi]<0) continue;
+      var team=w.pteam[fi], fx=w.px[fi], fy=w.py[fi];
+      var field=w.fields[team], g=gradientAt(field,w.gw,w.gh,fx,fy);
+      var dir=g.dir;
+      if (g.x===0 && g.y===0) dir = start % 12;
+      var mdirs=MOVE_DIR[table][dir];
+      var moved=false, tried=[0,0,0,0,0];
+      for (var p=0;p<5;p++) {
+        var td=mdirs[p], nx=fx+DIR_X[td], ny=fy+DIR_Y[td];
+        tried[p]=idx(w.gw,nx,ny);
+        if (inB(w.gw,w.gh,nx,ny) && !w.blocked[idx(w.gw,nx,ny)] && w.places[tried[p]]<0) {
+          w.places[idx(w.gw,fx,fy)]=-1; w.places[tried[p]]=fi;
+          w.px[fi]=nx; w.py[fi]=ny; w.pdir[fi]=td; moved=true; break;
+        }
       }
-      w.px[i] = Math.max(lo, Math.min(maxX, w.px[i]));
-      w.py[i] = Math.max(lo, Math.min(maxY, w.py[i]));
+      if (moved) continue;
+      var ni0=tried[0], tf=w.places[ni0];
+      if (tf>=0 && tf!==fi && w.pteam[tf]!==team) {
+        var res=combatOutcome(w.pteam[tf],w.php[tf],team,true,cp.attack[team],cp.health[team]);
+        w.stats.attacks++;
+        w.php[tf]=res.health; w.pteam[tf]=res.team;
+        if (res.converted) w.stats.converts++;
+        continue;
+      }
+      for (var s=1;s<=2;s++) {
+        var ni=tried[s], tj=w.places[ni];
+        if (tj>=0 && tj!==fi && w.pteam[tj]!==team) {
+          var rr=combatOutcome(w.pteam[tj],w.php[tj],team,false,cp.attack[team],cp.health[team]);
+          w.stats.attacks++;
+          w.php[tj]=rr.health; w.pteam[tj]=rr.team;
+          if (rr.converted) w.stats.converts++;
+          break;
+        }
+      }
+      var front=w.places[ni0];
+      if (front>=0 && front!==fi && w.pteam[front]===team) {
+        w.php[front]=healOutcome(w.php[front],cp.defense[team]); w.stats.heals++;
+      }
     }
-    assimilate(w);
-    w.timeLeft = Math.max(0, w.timeLeft - dt);
-    w.result = judgeWinner(w.counts, w.total, w.timeLeft);
+    w.counts.fill(0);
+    for (var k3=0;k3<w.total;k3++) if (w.php[k3]>=0) w.counts[w.pteam[k3]]++;
+    w.timeLeft=Math.max(0,w.timeLeft-dt);
+    w.result=judgeWinner(w.counts,w.total,w.timeLeft);
     return w;
   }
 
-  function renderWorld(w, ctx) {
-    ctx.clearRect(0, 0, w.width, w.height);
-    ctx.fillStyle = '#111318'; ctx.fillRect(0, 0, w.width, w.height);
-    ctx.strokeStyle = '#1E2229'; ctx.lineWidth = 1; ctx.beginPath();
-    for (var x = 0; x <= w.gw; x += 4) { ctx.moveTo(x * w.cell + 0.5, 0); ctx.lineTo(x * w.cell + 0.5, w.height); }
-    for (var y = 0; y <= w.gh; y += 4) { ctx.moveTo(0, y * w.cell + 0.5); ctx.lineTo(w.width, y * w.cell + 0.5); }
-    ctx.stroke();
-    ctx.fillStyle = '#2A2F38';
-    for (var yy = 0; yy < w.gh; yy++) for (var xx = 0; xx < w.gw; xx++)
-      if (w.blocked[idx(w.gw, xx, yy)]) ctx.fillRect(xx * w.cell, yy * w.cell, w.cell, w.cell);
-    for (var t = 0; t < w.nTeams; t++) {
-      ctx.fillStyle = w.teams[t].color;
-      for (var i = 0; i < w.total; i++) if (w.pteam[i] === t) ctx.fillRect(w.px[i] - 1.6, w.py[i] - 1.6, 3.2, 3.2);
-    }
-    for (var q = 0; q < w.nTeams; q++) {
-      var tm = w.teams[q];
-      ctx.strokeStyle = tm.color; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(tm.x, tm.y, 8, 0, 6.2831853); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(tm.x - 13, tm.y); ctx.lineTo(tm.x + 13, tm.y);
-      ctx.moveTo(tm.x, tm.y - 13); ctx.lineTo(tm.x, tm.y + 13);
-      ctx.stroke();
-      if (q === 0) {
-        ctx.fillStyle = '#D8D5CC'; ctx.font = '11px monospace';
-        ctx.fillText('P1', tm.x + 12, tm.y - 10);
-      }
+  function hexToAbgr(hex, level) {
+    var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    var f=0.4+0.6*level/6;
+    return (255<<24)|(Math.round(b*f)<<16)|(Math.round(g*f)<<8)|Math.round(r*f);
+  }
+  // 纯函数：把战场写入 Uint32 像素缓冲（小端 ABGR）
+  function renderField(w, buf32) {
+    var n=w.gw*w.gh;
+    for (var i=0;i<n;i++) buf32[i]=w.blocked[i] ? 0xff38332a : 0xff1b1512;
+    var pal=[];
+    for (var t=0;t<w.nTeams;t++) { pal[t]=[]; for (var l=0;l<7;l++) pal[t][l]=hexToAbgr(TEAM_COLORS[t],l); }
+    for (var fi=0;fi<w.total;fi++) {
+      if (w.php[fi]<0) continue;
+      var lvl=Math.min(6, Math.floor(w.php[fi]/(MAX_HP-1)*6));
+      buf32[idx(w.gw,w.px[fi],w.py[fi])]=pal[w.pteam[fi]][lvl];
     }
   }
 
-  global.LWLogic = {
-    INF: INF, idx: idx, NEI: NEI, TEAM_COLORS: TEAM_COLORS, TEAM_NAMES: TEAM_NAMES,
-    makeRng: makeRng, computeDistanceField: computeDistanceField, gradientAt: gradientAt,
-    resolveAssimilation: resolveAssimilation, judgeWinner: judgeWinner, buildArena: buildArena,
-    createWorld: createWorld, step: step, renderWorld: renderWorld
+  global.LW2 = {
+    INF:INF, MAX_HP:MAX_HP, DIR_X:DIR_X, DIR_Y:DIR_Y, MOVE_DIR:MOVE_DIR, NEI8:NEI8,
+    FILL_TABLE:FILL_TABLE, TEAM_COLORS:TEAM_COLORS, TEAM_NAMES:TEAM_NAMES, DEFAULT:DEFAULT, MAP_DEFS:MAP_DEFS,
+    idx:idx, inB:inB, clamp:clamp, makeRng:makeRng, fixsqrt:fixsqrt,
+    computeCombatParams:computeCombatParams, combatOutcome:combatOutcome, healOutcome:healOutcome,
+    computeDistanceField:computeDistanceField, gradientAt:gradientAt, vecToDir:vecToDir,
+    buildArena:buildArena, spawnSpots:spawnSpots, findPassableNear:findPassableNear,
+    judgeWinner:judgeWinner, createWorld:createWorld, step:step, renderField:renderField
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 /*LOGIC-END*/
 </script>
-
 <script>
 (function () {
   'use strict';
-  var L = window.LWLogic;
-  var cv = document.getElementById('cv');
-  var ctx = cv.getContext('2d');
-  var banner = document.getElementById('banner');
-  var hint = document.getElementById('hint');
-  var clockEl = document.getElementById('clock');
-  var teamsEl = document.getElementById('teams');
-  var pauseBtn = document.getElementById('pause');
-  var restartBtn = document.getElementById('restart');
-  var tc = document.getElementById('tc');
-  var world, paused = false, rows = [], acc = 0, last = 0, hudTick = 0;
+  var L = window.LW2;
+  var $ = function (id) { return document.getElementById(id); };
+  var cv = $('cv'), ctx = cv.getContext('2d', { alpha:false });
+  var img = ctx.createImageData(L.MAP_DEFS ? 160 : 160, 100);
+  var buf32 = new Uint32Array(img.data.buffer);
+  var STEP = 1/60;
+  var world = null, paused = false, finished = false, acc = 0, last = 0, hudTick = 0;
   var keys = Object.create(null);
+  var opts = loadOpts();
+  var setup = loadSetup();
+  var audio = null;
+  var countdownTimer = null;
 
-  function buildHud() {
-    teamsEl.innerHTML = '';
-    rows = world.teams.map(function (tm) {
-      var row = document.createElement('div'); row.className = 'team';
-      var sw = document.createElement('i'); sw.className = 'sw'; sw.style.background = tm.color;
-      var nm = document.createElement('span'); nm.className = 'nm';
-      nm.innerHTML = tm.name + '<em>' + (tm.isAI ? 'AI' : 'P1') + '</em>';
-      var ct = document.createElement('span'); ct.className = 'ct'; ct.textContent = world.perTeam;
-      var bar = document.createElement('div'); bar.className = 'bar';
-      var fill = document.createElement('i'); fill.style.background = tm.color; fill.style.width = '25%';
-      bar.appendChild(fill);
-      row.appendChild(sw); row.appendChild(nm); row.appendChild(ct); row.appendChild(bar);
-      teamsEl.appendChild(row);
-      return { ct: ct, fill: fill };
+  function loadOpts() {
+    try {
+      var s = JSON.parse(localStorage.getItem('lw2opts') || 'null') || {};
+      return { cursor: s.cursor||4, music: s.music===undefined?50:s.music, sfx: s.sfx===undefined?70:s.sfx, water: s.water===undefined?15:s.water };
+    } catch (e) { return { cursor:4, music:50, sfx:70, water:15 }; }
+  }
+  function saveOpts() { try { localStorage.setItem('lw2opts', JSON.stringify(opts)); } catch (e) {} }
+  function loadSetup() {
+    try {
+      var s = JSON.parse(localStorage.getItem('lw2setup') || 'null') || {};
+      return { n:s.n||4, modes:s.modes||['human','cpu','cpu','cpu','cpu','cpu'], map:s.map||'classic',
+        rules:{ attack:s.rules&&s.rules.attack!==undefined?s.rules.attack:8, defense:s.rules&&s.rules.defense!==undefined?s.rules.defense:8,
+          health:s.rules&&s.rules.health!==undefined?s.rules.health:8, influence:s.rules&&s.rules.influence!==undefined?s.rules.influence:8,
+          army:s.rules&&s.rules.army!==undefined?s.rules.army:16 } };
+    } catch (e) { return { n:4, modes:['human','cpu','cpu','cpu','cpu','cpu'], map:'classic', rules:{attack:8,defense:8,health:8,influence:8,army:16} }; }
+  }
+  function saveSetup() { try { localStorage.setItem('lw2setup', JSON.stringify(setup)); } catch (e) {} }
+  function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+  function fmt(s){ var m=Math.floor(s/60),r=Math.floor(s%60); return (m<10?'0':'')+m+':'+(r<10?'0':'')+r; }
+
+  function show(id) {
+    ['view-menu','view-setup','view-game','view-options','view-about'].forEach(function (v) {
+      $(v).classList.toggle('hidden', v !== id);
     });
   }
 
-  function newGame(n) {
-    world = L.createWorld({ teams: n, perTeam: 340, seed: 20261126, time: 180 });
-    cv.width = world.width; cv.height = world.height;
-    paused = false; acc = 0;
-    banner.className = 'banner'; banner.textContent = '';
-    pauseBtn.textContent = '暂停';
-    buildHud(); hudTick = 0; updateHud(true);
-  }
-
-  function fmt(s) {
-    var m = Math.floor(s / 60), r = Math.floor(s % 60);
-    return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r;
-  }
-
-  function updateHud(force) {
-    if (!force && (hudTick++ % 6)) return;
-    clockEl.innerHTML = fmt(world.timeLeft) + ' <small>REMAIN</small>';
-    for (var t = 0; t < world.nTeams; t++) {
-      rows[t].ct.textContent = world.counts[t];
-      rows[t].fill.style.width = (world.counts[t] / world.total * 100).toFixed(1) + '%';
+  // ===== Web Audio 程序化音效（零素材） =====
+  function ensureAudio() {
+    if (audio) return audio;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    var ac = new AC();
+    var master = ac.createGain(); master.gain.value = 1; master.connect(ac.destination);
+    var sfxGain = ac.createGain(); sfxGain.gain.value = opts.sfx/100; sfxGain.connect(master);
+    var musicGain = ac.createGain(); musicGain.gain.value = opts.music/100*0.25; musicGain.connect(master);
+    var waterGain = ac.createGain(); waterGain.gain.value = opts.water/100*0.3; waterGain.connect(master);
+    // 水声：低通白噪声循环
+    try {
+      var len = ac.sampleRate*2, nb = ac.createBuffer(1,len,ac.sampleRate), d = nb.getChannelData(0);
+      var lastN = 0;
+      for (var i=0;i<len;i++) { lastN = (lastN + (Math.random()*2-1)*0.05)*0.995; d[i]=lastN; }
+      var src = ac.createBufferSource(); src.buffer = nb; src.loop = true;
+      var lp = ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=520;
+      src.connect(lp); lp.connect(waterGain); src.start();
+    } catch (e) {}
+    // 音乐：小调琶音循环（三角波 + 短包络）
+    var scale = [220,261.63,329.63,440,349.23,261.63,293.66,220];
+    var mi = 0;
+    function note() {
+      if (!audio || opts.music<=0) return;
+      var t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.type='triangle'; o.frequency.value = scale[mi % scale.length]; mi++;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.42);
+      o.connect(g); g.connect(musicGain); o.start(t); o.stop(t+0.45);
     }
-    if (world.result && world.result.over) {
-      var win = world.teams[world.result.winner];
-      banner.textContent = (world.result.reason === 'domination' ? '全面控制 · ' : '时间到 · ') + win.name + ' 获胜';
-      banner.className = 'banner on';
-      hint.textContent = '按 R 或点「重开」再来一局';
+    var mTimer = setInterval(note, 460);
+    audio = { ac:ac, master:master, sfx:sfxGain, music:musicGain, water:waterGain, note:note, mTimer:mTimer };
+    return audio;
+  }
+  function tone(freq, dur, type, vol, slideTo) {
+    var a = ensureAudio(); if (!a || opts.sfx<=0) return;
+    try {
+      var t=a.ac.currentTime, o=a.ac.createOscillator(), g=a.ac.createGain();
+      o.type=type||'square'; o.frequency.setValueAtTime(freq,t);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol||0.35, t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+      o.connect(g); g.connect(a.sfx); o.start(t); o.stop(t+dur+0.02);
+    } catch (e) {}
+  }
+  function noise(dur, vol) {
+    var a = ensureAudio(); if (!a || opts.sfx<=0) return;
+    try {
+      var len=Math.floor(a.ac.sampleRate*dur), b=a.ac.createBuffer(1,len,a.ac.sampleRate), d=b.getChannelData(0);
+      for (var i=0;i<len;i++) d[i]=Math.random()*2-1;
+      var s=a.ac.createBufferSource(); s.buffer=b;
+      var f=a.ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=900;
+      var g=a.ac.createGain(); g.gain.value=vol||0.25;
+      s.connect(f); f.connect(g); g.connect(a.sfx); s.start();
+    } catch (e) {}
+  }
+  function sfx(kind) {
+    if (kind==='go') tone(660,0.16,'square',0.4);
+    else if (kind==='tick') tone(440,0.08,'square',0.3);
+    else if (kind==='convert') tone(300,0.13,'sine',0.18,620);
+    else if (kind==='win') { tone(523,0.6,'triangle',0.4); setTimeout(function(){tone(659,0.6,'triangle',0.4);},120); setTimeout(function(){tone(784,0.8,'triangle',0.4);},240); }
+    else if (kind==='lose') tone(180,0.9,'sawtooth',0.3,90);
+    else if (kind==='splash') noise(0.12,0.2);
+  }
+  function applyVolumes() {
+    if (!audio) return;
+    audio.sfx.gain.value = opts.sfx/100;
+    audio.music.gain.value = opts.music/100*0.25;
+    audio.water.gain.value = opts.water/100*0.3;
+  }
+
+  // ===== 设置页 =====
+  function buildSlots() {
+    var box = $('slots'); box.innerHTML='';
+    for (var i=0;i<6;i++) {
+      var row=document.createElement('div'); row.className='slot';
+      var sw=document.createElement('i'); sw.className='sw'; sw.style.background=L.TEAM_COLORS[i];
+      var nm=document.createElement('span'); nm.className='nm'; nm.textContent=L.TEAM_NAMES[i];
+      var modes=document.createElement('div'); modes.className='modes';
+      ['human','cpu','off'].forEach(function (m) {
+        var b=document.createElement('button'); b.type='button'; b.textContent=m.toUpperCase();
+        b.className = setup.modes[i]===m ? 'on' : '';
+        b.onclick=function(){
+          if (m==='human') { for (var j=0;j<6;j++) if (setup.modes[j]==='human') setup.modes[j]='cpu'; }
+          setup.modes[i]=m; saveSetup(); buildSlots();
+        };
+        modes.appendChild(b);
+      });
+      row.appendChild(sw); row.appendChild(nm); row.appendChild(modes); box.appendChild(row);
+    }
+  }
+  var RULE_DEFS = [['attack','Attack'],['defense','Defense'],['health','Health'],['influence','Influence'],['army','Army Size']];
+  function buildRules() {
+    var box=$('rules'); box.innerHTML='';
+    RULE_DEFS.forEach(function (r) {
+      var row=document.createElement('div'); row.className='rule-row';
+      var lab=document.createElement('label'); lab.textContent=r[1];
+      var inp=document.createElement('input'); inp.type='range'; inp.min='0'; inp.max='32'; inp.step='1'; inp.value=setup.rules[r[0]];
+      var out=document.createElement('output'); out.textContent=setup.rules[r[0]];
+      inp.oninput=function(){ setup.rules[r[0]]=Number(inp.value); out.textContent=inp.value; saveSetup(); };
+      row.appendChild(lab); row.appendChild(inp); row.appendChild(out); box.appendChild(row);
+    });
+  }
+  function buildMaps() {
+    var box=$('maps'); box.innerHTML='';
+    L.MAP_DEFS.forEach(function (m) {
+      var card=document.createElement('div'); card.className='mapcard'+(setup.map===m.id?' on':'');
+      var mini=document.createElement('canvas'); mini.width=40; mini.height=25;
+      var mc=mini.getContext('2d'), mi=mc.createImageData(40,25), mb=new Uint32Array(mi.data.buffer);
+      var b=L.buildArena(40,25,m.id);
+      for (var i=0;i<40*25;i++) mb[i]=b[i]?0xff38332a:0xff1b1512;
+      mc.putImageData(mi,0,0);
+      card.appendChild(mini);
+      var t=document.createElement('div'); t.textContent=m.name; card.appendChild(t);
+      card.onclick=function(){ setup.map=m.id; saveSetup(); buildMaps(); };
+      box.appendChild(card);
+    });
+  }
+
+  // ===== 渲染 =====
+  function drawArena() {
+    if (!world) return;
+    L.renderField(world, buf32);
+    ctx.putImageData(img,0,0);
+    // 光标叠加：十字准星
+    for (var t=0;t<world.nTeams;t++) {
+      var tm=world.teams[t];
+      ctx.strokeStyle=tm.color; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(tm.x,tm.y,4,0,6.2831853); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(tm.x-6,tm.y); ctx.lineTo(tm.x+6,tm.y);
+      ctx.moveTo(tm.x,tm.y-6); ctx.lineTo(tm.x,tm.y+6);
+      ctx.stroke();
+    }
+  }
+  var hudRows=[];
+  function buildHud() {
+    var box=$('teams'); box.innerHTML=''; hudRows=[];
+    for (var t=0;t<world.nTeams;t++) {
+      var tm=world.teams[t], row=document.createElement('div'); row.className='team';
+      var sw=document.createElement('i'); sw.className='sw'; sw.style.background=tm.color;
+      var nm=document.createElement('span'); nm.className='nm';
+      nm.innerHTML=tm.name+'<em>'+(tm.isAI?'CPU':'P1')+'</em>';
+      var ct=document.createElement('span'); ct.className='ct'; ct.textContent=world.counts[t];
+      var bar=document.createElement('div'); bar.className='bar';
+      var fill=document.createElement('i'); fill.style.background=tm.color; fill.style.width='0%';
+      bar.appendChild(fill); row.appendChild(sw); row.appendChild(nm); row.appendChild(ct); row.appendChild(bar);
+      box.appendChild(row); hudRows.push({ct:ct,fill:fill});
+    }
+    var share=$('share'); share.innerHTML='';
+    for (var q=0;q<world.nTeams;q++) {
+      var seg=document.createElement('i'); seg.style.background=world.teams[q].color; seg.style.width='0%';
+      seg.title=world.teams[q].name; share.appendChild(seg);
+    }
+  }
+  function updateHud() {
+    if (!world) return;
+    $('clock').innerHTML=fmt(world.timeLeft)+' <small>REMAIN</small>';
+    var segs=$('share').children;
+    for (var t=0;t<world.nTeams;t++) {
+      if (hudRows[t]) {
+        hudRows[t].ct.textContent=world.counts[t];
+        hudRows[t].fill.style.width=(world.counts[t]/world.total*100).toFixed(1)+'%';
+      }
+      if (segs[t]) segs[t].style.width=(world.counts[t]/world.total*100).toFixed(1)+'%';
     }
   }
 
-  function over() { return !!(world && world.result && world.result.over); }
-  function pointer(e) {
-    if (!world || over()) return;
-    var r = cv.getBoundingClientRect();
-    var x = (e.clientX - r.left) / r.width * world.width;
-    var y = (e.clientY - r.top) / r.height * world.height;
-    world.teams[0].tx = Math.max(world.cell * 2, Math.min(world.width - world.cell * 2, x));
-    world.teams[0].ty = Math.max(world.cell * 2, Math.min(world.height - world.cell * 2, y));
+  // ===== 对局流程 =====
+  function activeTeamCount() {
+    var n=0;
+    for (var i=0;i<6;i++) if (setup.modes[i]!=='off') n++;
+    return clamp(n,2,6);
   }
-  cv.addEventListener('pointerdown', function (e) { cv.setPointerCapture(e.pointerId); pointer(e); });
-  cv.addEventListener('pointermove', function (e) { if (e.buttons || e.pointerType === 'touch') pointer(e); });
+  function startGame() {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer=null; }
+    var n=activeTeamCount();
+    // 把 human/cpu/off 压缩到前 n 队；human 必须占第 0 队
+    var order=[], humanFound=false;
+    for (var i=0;i<6;i++) if (setup.modes[i]!=='off') order.push(i);
+    if (!order.length) order=[0,1,2,3];
+    var hasHuman=order.some(function(i){return setup.modes[i]==='human';});
+    world=L.createWorld({ teams:n, map:setup.map, attack:setup.rules.attack, defense:setup.rules.defense,
+      health:setup.rules.health, influence:setup.rules.influence, army:setup.rules.army,
+      cursorSpeed:opts.cursor, seed:20261127, time:180 });
+    // 按 setup 的颜色模式重映射队伍颜色标签（human 优先第 0 队）
+    world.teams.forEach(function(tm,i){
+      var src=order[i];
+      tm.name=L.TEAM_NAMES[src];
+      tm.color=L.TEAM_COLORS[src];
+      tm.isAI=!(i===0 && hasHuman);
+    });
+    world.cursorSpeed=opts.cursor;
+    paused=false; finished=false; acc=0; last=0;
+    $('pausebox').classList.add('hidden'); $('resultbox').classList.add('hidden');
+    show('view-game'); buildHud(); updateHud(); drawArena(); ensureAudio();
+    var seq=['3','2','1','GO'], idx=0, cd=$('countdown');
+    cd.classList.remove('hidden'); cd.textContent=seq[0]; sfx('tick');
+    countdownTimer=setInterval(function(){
+      idx++;
+      if (idx<seq.length) { cd.textContent=seq[idx]; sfx(idx===3?'go':'tick'); }
+      else { clearInterval(countdownTimer); countdownTimer=null; cd.classList.add('hidden'); last=0; }
+    }, 620);
+  }
+  function endGame() {
+    finished=true;
+    var r=world.result, win=world.teams[r.winner];
+    $('result-reason').textContent=r.reason==='domination'?'DOMINATION':'TIME OUT';
+    $('result-title').textContent=win.name+(win.isAI?' (CPU)':' (P1)')+' WINS';
+    $('resultbox').classList.remove('hidden');
+    sfx(r.winner===0?'win':'lose');
+  }
+  function togglePause(force) {
+    if (!world || finished || countdownTimer) return;
+    paused = force===undefined ? !paused : force;
+    $('pausebox').classList.toggle('hidden', !paused);
+    $('btn-resume').textContent='Resume';
+  }
 
-  window.addEventListener('keydown', function (e) {
-    var k = e.key.toLowerCase(); keys[k] = true;
-    if (k === ' ') { e.preventDefault(); togglePause(); }
-    if (k === 'r') newGame(Number(tc.value));
-    if (k >= '1' && k <= '6') { tc.value = String(Math.max(3, Math.min(6, Number(k)))); newGame(Number(tc.value)); }
+  // ===== 输入 =====
+  cv.addEventListener('pointerdown', function(e){ cv.setPointerCapture(e.pointerId); aim(e); });
+  cv.addEventListener('pointermove', function(e){ if (e.buttons || e.pointerType==='touch') aim(e); });
+  function aim(e) {
+    if (!world || finished || paused || countdownTimer) return;
+    var r=cv.getBoundingClientRect();
+    world.teams[0].tx=clamp((e.clientX-r.left)/r.width*world.width,2,world.width-3);
+    world.teams[0].ty=clamp((e.clientY-r.top)/r.height*world.height,2,world.height-3);
+  }
+  window.addEventListener('keydown', function(e){
+    var k=e.key.toLowerCase(); keys[k]=true;
+    if (k==='escape'||k===' ') { e.preventDefault(); togglePause(); }
+    if (k==='r' && world && !countdownTimer) startGame();
   });
-  window.addEventListener('keyup', function (e) { keys[e.key.toLowerCase()] = false; });
-
+  window.addEventListener('keyup', function(e){ keys[e.key.toLowerCase()]=false; });
   function nudge() {
-    if (!world || over()) return;
-    var tm = world.teams[0], d = world.cell * 9;
-    if (keys['a'] || keys['arrowleft']) tm.tx -= d;
-    if (keys['d'] || keys['arrowright']) tm.tx += d;
-    if (keys['w'] || keys['arrowup']) tm.ty -= d;
-    if (keys['s'] || keys['arrowdown']) tm.ty += d;
-    tm.tx = Math.max(world.cell * 2, Math.min(world.width - world.cell * 2, tm.tx));
-    tm.ty = Math.max(world.cell * 2, Math.min(world.height - world.cell * 2, tm.ty));
+    if (!world || finished || paused || countdownTimer) return;
+    var tm=world.teams[0], d=(2+opts.cursor)*1.5;
+    if (keys['a']||keys['arrowleft']) tm.tx-=d;
+    if (keys['d']||keys['arrowright']) tm.tx+=d;
+    if (keys['w']||keys['arrowup']) tm.ty-=d;
+    if (keys['s']||keys['arrowdown']) tm.ty+=d;
+    tm.tx=clamp(tm.tx,2,world.width-3); tm.ty=clamp(tm.ty,2,world.height-3);
   }
 
-  function togglePause() {
-    if (over()) return;
-    paused = !paused; pauseBtn.textContent = paused ? '继续' : '暂停';
-  }
-  pauseBtn.addEventListener('click', togglePause);
-  restartBtn.addEventListener('click', function () { newGame(Number(tc.value)); });
-  tc.addEventListener('change', function () { newGame(Number(tc.value)); });
-
-  var STEP = 1 / 60;
+  // ===== 主循环 =====
+  var lastConverts=0;
   function frame(ts) {
-    if (!last) last = ts;
-    var dt = (ts - last) / 1000; last = ts;
-    if (dt > 0.25) dt = 0.25;
-    nudge();
-    if (!paused && !over()) {
-      acc += dt;
-      var guard = 0;
-      while (acc >= STEP && guard++ < 8) { L.step(world, STEP); acc -= STEP; }
+    if (!last) last=ts;
+    var dt=(ts-last)/1000; last=ts;
+    if (dt>0.25) dt=0.25;
+    if (world) {
+      nudge();
+      if (!paused && !finished && !countdownTimer) {
+        acc+=dt; var guard=0;
+        while (acc>=STEP && guard++<8) { L.step(world,STEP); acc-=STEP; }
+        var dc=world.stats.converts-lastConverts;
+        if (dc>0) { lastConverts=world.stats.converts; sfx('convert'); }
+        if (world.result && world.result.over) endGame();
+      }
+      drawArena();
+      if ((hudTick++ % 6)===0) updateHud();
     }
-    L.renderWorld(world, ctx);
-    updateHud(false);
     requestAnimationFrame(frame);
   }
 
-  newGame(4);
-  requestAnimationFrame(frame);
+  // ===== 按钮绑定 =====
+  $('btn-single').onclick=function(){ buildSlots(); buildRules(); buildMaps(); show('view-setup'); };
+  $('btn-options').onclick=function(){ show('view-options'); };
+  $('btn-about').onclick=function(){ show('view-about'); };
+  $('btn-setup-back').onclick=function(){ show('view-menu'); };
+  $('btn-opts-back').onclick=function(){ show('view-menu'); };
+  $('btn-about-back').onclick=function(){ show('view-menu'); };
+  $('btn-start').onclick=function(){ startGame(); };
+  $('btn-resume').onclick=function(){ togglePause(false); };
+  $('btn-leave').onclick=function(){ togglePause(false); show('view-menu'); world=null; };
+  $('btn-again').onclick=function(){ startGame(); };
+  $('btn-result-menu').onclick=function(){ show('view-menu'); world=null; };
+  [['opt-cursor','cursor'],['opt-music','music'],['opt-sfx','sfx'],['opt-water','water']].forEach(function(p){
+    var el=$(p[0]), out=$(p[0]+'-v');
+    el.value=opts[p[1]]; out.textContent=opts[p[1]];
+    el.oninput=function(){ opts[p[1]]=Number(el.value); out.textContent=el.value; saveOpts(); applyVolumes(); if (world) world.cursorSpeed=opts.cursor; };
+  });
+  $('pause-cursor').value=opts.cursor; $('pause-cursor-v').textContent=opts.cursor;
+  $('pause-cursor').oninput=function(){ opts.cursor=Number(this.value); $('pause-cursor-v').textContent=this.value; saveOpts(); if (world) world.cursorSpeed=opts.cursor; };
+  document.addEventListener('pointerdown', function(){ ensureAudio(); }, { once:true });
+
+  // 调试出口（自动化验收）
   window.LWGame = {
-    getWorld: function () { return world; },
-    setTeams: function (n) { newGame(n); },
-    togglePause: togglePause,
-    // 供自动化验收直接推进逻辑，不受无头浏览器 rAF 节流影响
-    advance: function (n) { for (var i = 0; i < n; i++) L.step(world, STEP); return world.tick; },
-    logic: L
+    getWorld:function(){ return world; },
+    setTeams:function(n){ for (var i=0;i<6;i++) setup.modes[i]= i<n?(i===0?'human':'cpu'):'off'; saveSetup(); startGame(); },
+    start:startGame,
+    togglePause:togglePause,
+    advance:function(n){ if (!world) return 0; for (var i=0;i<n;i++) L.step(world,STEP); return world.tick; },
+    logic:L,
+    show:show,
+    aim:function(x,y){ if (world){ world.teams[0].tx=x; world.teams[0].ty=y; } }
   };
+
+  requestAnimationFrame(frame);
 })();
 </script>
 </body>
