@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="build" content="v7.0.0 · 2026-11-28 01:20">
+<meta name="build" content="v8.0.0 · 2026-11-28 18:20">
 <link rel="icon" href="data:,">
 <title>液态战争 · LIQUID WAR.IO</title>
 <style>
@@ -80,6 +80,31 @@
   .team .bar i{display:block;height:2px}
   .keys{font:10px/1.7 var(--mono);color:var(--faint);margin-top:12px}
   .keys b{color:var(--dim);font-weight:400}
+  /* ===== v8 新增控件 ===== */
+  .pickrow{display:flex;gap:5px;flex-wrap:wrap}
+  .pickrow button{flex:1;min-width:52px;background:transparent;border:1px solid var(--line);color:var(--dim);padding:7px 4px;font:10px/1.2 var(--mono);cursor:pointer}
+  .pickrow button:hover{border-color:var(--accent);color:var(--ink)}
+  .pickrow button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .toggle-row{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;margin-bottom:7px;padding:7px 9px;border:1px solid var(--line-soft);background:var(--bg);cursor:pointer}
+  .toggle-row:hover{border-color:var(--line)}
+  .toggle-row span{font:11px/1.4 var(--mono);color:var(--dim)}
+  .toggle-row span b{font-weight:400;color:var(--ink)}
+  .toggle-row span small{display:block;font-size:9px;color:var(--faint);margin-top:2px}
+  .toggle-row i{width:28px;height:14px;border:1px solid var(--line);position:relative;display:block;transition:.15s}
+  .toggle-row i:after{content:'';position:absolute;top:1px;left:1px;width:10px;height:10px;background:var(--faint);transition:.15s}
+  .toggle-row.on i{background:var(--accent);border-color:var(--accent)}
+  .toggle-row.on i:after{left:15px;background:var(--bg)}
+  .dashbox{margin-top:14px}
+  .dashbox .bar{height:4px;background:var(--line-soft)}
+  .dashbox .bar i{display:block;height:4px;background:var(--accent);width:100%}
+  .dash-hint{font:9px/1.5 var(--mono);color:var(--faint);margin:4px 0 0}
+  .toasts{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;pointer-events:none;z-index:6;width:max-content;max-width:80%}
+  .toast{background:rgba(18,21,27,.95);border:1px solid var(--accent);color:var(--ink);font:11px/1.3 var(--mono);padding:8px 14px;letter-spacing:.06em;transition:opacity .25s;animation:toastIn .25s ease-out}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+  .resultbox{overflow:auto;padding:14px 0}
+  .stats-table{font:10px/1.7 var(--mono);color:var(--dim);max-width:420px;margin:4px auto 0;display:grid;grid-template-columns:auto 1fr;gap:2px 14px;text-align:left}
+  .stats-table b{color:var(--ink);font-weight:400;text-align:right}
+  .stats-table b.wide{text-align:left;word-break:break-all}
   .share{position:absolute;left:0;right:0;bottom:0;height:8px;display:flex;background:var(--line-soft)}
   .share i{display:block;height:100%}
   .opts{max-width:520px;margin:0 auto}
@@ -169,10 +194,15 @@
             <div class="tactics" id="tactics"></div>
             <p class="sect">Rules</p>
             <div id="rules"></div>
+            <p class="sect" style="margin-top:18px">AI · 难度 / 战术人格</p>
+            <div class="pickrow" id="ailevel"></div>
+            <div class="pickrow" id="aipersona" style="margin-top:6px"></div>
           </div>
           <div class="col">
             <p class="sect">Select Map</p>
             <div class="maps" id="maps"></div>
+            <p class="sect" style="margin-top:16px">v8 · 玩法开关</p>
+            <div id="toggles"></div>
             <div class="legend" id="terrain-legend">
               <span><i style="background:#463f22"></i>加速带</span>
               <span><i style="background:#341a18"></i>危险区</span>
@@ -193,6 +223,7 @@
         <div class="arena">
           <canvas id="cv" width="1200" height="750" aria-label="液态战争战场"></canvas>
           <div class="countdown hidden" id="countdown"></div>
+          <div class="toasts" id="toasts"></div>
           <div class="pausebox hidden" id="pausebox">
             <h3>PAUSED</h3>
             <button class="btn" id="btn-resume">Resume</button>
@@ -203,6 +234,7 @@
             <span class="win" id="result-reason">DOMINATION</span>
             <h3 id="result-title">WIN</h3>
             <div id="result-detail" style="font:11px/1.7 var(--mono);color:var(--dim);text-align:center"></div>
+            <div class="stats-table" id="result-stats"></div>
             <button class="btn" id="btn-again">Play Again</button>
             <button class="btn" id="btn-result-menu">Main Menu</button>
           </div>
@@ -228,8 +260,13 @@
               <span><i style="background:#1a2c1e"></i>治疗区</span>
             </div>
           </div>
+          <div class="dashbox" id="dashbox">
+            <p class="sect" style="margin-top:14px">Dash · 冲刺 <b id="dashlabel" style="float:right;color:var(--accent)">READY</b></p>
+            <div class="bar"><i id="dashfill"></i></div>
+            <p class="dash-hint">Q 键 / 鼠标右键 · 光标加速 2.6×</p>
+          </div>
           <p class="split-tip hidden" id="splittip">◈ 双光标分兵中 · Shift+点击移动副场 · F 键关闭</p>
-          <p class="keys"><b>鼠标 / 触摸</b> 指向目标<br><b>Shift+点击</b> 分兵第二路<br><b>F</b> 开关分兵<br><b>WASD / ↑←↓→</b> 微调光标<br><b>Esc / 空格</b> 暂停 · <b>R</b> 重开</p>
+          <p class="keys"><b>鼠标 / 触摸</b> 指向目标<br><b>Shift+点击</b> 分兵第二路 · <b>F</b> 开关<br><b>WASD / ↑←↓→</b> P1 微调<br><b>IJKL</b> P2 微调（双人时）<br><b>Q / 右键</b> 冲刺 · <b>Esc / 空格</b> 暂停 · <b>R</b> 重开</p>
         </aside>
       </div>
     </section>
@@ -275,7 +312,7 @@
   </main>
 
   <footer>
-    <span data-build>v7.0.0 · 2026-11-28 01:20</span>
+    <span data-build>v8.0.0 · 2026-11-28 18:20</span>
     <span>LW5 战斗模型 · 12 方向梯度 · 确定性单测</span>
   </footer>
 </div>
@@ -303,6 +340,28 @@
   // 地形只改「移动节奏」与「血量」，不改队伍归属规则，粒子总数恒定。
   var TERRAIN = { NONE:0, BOOST:1, DANGER:2, GLUE:3, MEDICINE:4 };
   var TERRAIN_NAMES = ['', '加速带', '危险区', '胶水区', '治疗区'];
+  // ===== v8.0.0 新增常量 =====
+  var NEUTRAL_TEAM = -1; // 中立粒子归属：静止的争夺目标，可被任意队吞并；不参与胜负计数
+  // P0-2 AI 难度分级：采样数、候选数、思考等待、移动速度倍率
+  var AI_LEVELS = [
+    { id:'easy',   name:'简单', sample:6,  pick:5, waitBase:70, waitVar:120, speed:0.72 },
+    { id:'normal', name:'普通', sample:20, pick:5, waitBase:40, waitVar:80,  speed:1.00 },
+    { id:'hard',   name:'困难', sample:36, pick:3, waitBase:16, waitVar:36,  speed:1.38 }
+  ];
+  // P0-2 战术人格：classic 原版 / aggressive 猛攻 / defensive 固守 / opportunist 猎弱
+  var AI_PERSONAS = [
+    { id:'classic',     name:'经典', desc:'优先吞并最近目标，行为均衡' },
+    { id:'aggressive',  name:'猛攻', desc:'锁定最近敌军，几乎不停顿' },
+    { id:'defensive',   name:'固守', desc:'优先清剿闯入己方半场的敌人' },
+    { id:'opportunist', name:'猎弱', desc:'优先攻击血量最低的目标' }
+  ];
+  // P1-1 传送门定义（比例坐标 [入口x,入口y,出口x,出口y]，仅部分地图拥有）
+  var PORTAL_DEFS = {
+    twin:[[0.28,0.16,0.72,0.84],[0.72,0.16,0.28,0.84]],
+    maze:[[0.12,0.50,0.88,0.50]],
+    spiral:[[0.16,0.50,0.84,0.50]],
+    flower:[[0.50,0.14,0.50,0.86]]
+  };
   // v4：战术预设（对齐 GNU LW6 team profile，五个参数映射到本作 0~32 档）
   var TACTICS = [
     { id:'balanced', name:'均衡', attack:8, defense:8, health:8, influence:8, army:16 },
@@ -556,6 +615,20 @@
       }
     }}
   ];
+  // P1-1 纯函数：把比例坐标的传送门定义落到具体网格，避开边界墙
+  function buildPortals(gw, gh, mapId, blocked) {
+    var defs = PORTAL_DEFS[mapId];
+    if (!defs) return [];
+    var out = [];
+    for (var i = 0; i < defs.length; i++) {
+      var d = defs[i];
+      var ax = clamp(Math.round(d[0]*gw), 2, gw-3), ay = clamp(Math.round(d[1]*gh), 2, gh-3);
+      var bx = clamp(Math.round(d[2]*gw), 2, gw-3), by = clamp(Math.round(d[3]*gh), 2, gh-3);
+      if (blocked && (blocked[idx(gw,ax,ay)] || blocked[idx(gw,bx,by)])) continue;
+      out.push({ ax:ax, ay:ay, bx:bx, by:by });
+    }
+    return out;
+  }
   function buildArena(gw, gh, mapId) {
     var b = new Uint8Array(gw * gh);
     rect(b,gw,gh,0,0,gw-1,1); rect(b,gw,gh,0,gh-2,gw-1,gh-1);
@@ -574,7 +647,7 @@
     for (var y = cy - r; y <= cy + r; y++) for (var x = cx - r; x <= cx + r; x++)
       if (inB(gw, gh, x, y) && !b[idx(gw, x, y)] && (x-cx)*(x-cx)+(y-cy)*(y-cy) <= r*r) t[idx(gw, x, y)] = v;
   }
-  function buildTerrain(gw, gh, mapId) {
+  function buildTerrain(gw, gh, mapId, shuffleSeed) {
     var t = new Uint8Array(gw * gh);
     var b = buildArena(gw, gh, mapId);
     var cx = Math.round(gw/2), cy = Math.round(gh/2), u = Math.min(gw, gh);
@@ -604,6 +677,21 @@
         if ((col+row)%2===1) tRect(t,b,gw,gh,gx,gy,Math.min(gw-2,gx+Math.round(s*0.4)),Math.min(gh-2,gy+Math.round(s*0.4)),TERRAIN.DANGER);
       }
       tDisc(t,b,gw,gh,cx,cy,Math.round(u*0.06),TERRAIN.MEDICINE);
+    }
+    // P2-2 地形随局扰动：按 seed 确定性镜像，仅换地形不换障碍，连通性不变
+    if (shuffleSeed) {
+      var rr = makeRng(shuffleSeed >>> 0)();
+      if (rr < 0.34) {
+        var tm = new Uint8Array(t.length);
+        for (var my = 0; my < gh; my++) for (var mx = 0; mx < gw; mx++)
+          tm[idx(gw, gw-1-mx, my)] = t[idx(gw, mx, my)];
+        return tm;
+      } else if (rr < 0.68) {
+        var tm2 = new Uint8Array(t.length);
+        for (var my2 = 0; my2 < gh; my2++) for (var mx2 = 0; mx2 < gw; mx2++)
+          tm2[idx(gw, mx2, gh-1-my2)] = t[idx(gw, mx2, my2)];
+        return tm2;
+      }
     }
     return t;
   }
@@ -664,7 +752,8 @@
     var n = clamp(opts.teams || 4, 2, 6);
     var mapId = opts.map || 'classic';
     var blocked = buildArena(gw, gh, mapId);
-    var terrain = buildTerrain(gw, gh, mapId);
+    // P2-2 仅 opt-in 时按种子扰动地形，默认保持原样（兼容既有布局与测试）
+    var terrain = buildTerrain(gw, gh, mapId, opts.shuffleTerrain ? (opts.seed || 20261127) : 0);
     var mode = opts.mode || 'conquest_default'; // v4: 'elimination' 纯吞并 | 'stronghold' 据点争夺
     // 据点圆心：中心若被障碍占据，螺旋外扩找开阔格，确保据点内有可通行区域
     var sc = findPassableNear(blocked, gw, gh, Math.round(gw/2), Math.round(gh/2));
@@ -687,7 +776,8 @@
     for (var i = 0; i < gw*gh; i++) if (!blocked[i]) room++;
     var fill = FILL_TABLE[cfg.army];
     var per = Math.max(1, Math.floor(room * fill / 100 / n));
-    var total = per * n;
+    var neutralPer = opts.neutral ? Math.max(2, Math.floor(per * 0.35)) : 0;
+    var total = per * n + neutralPer;
     var w = {
       gw:gw, gh:gh, width:gw, height:gh, cell:1, blocked:blocked, terrain:terrain, teams:teams, nTeams:n,
       total:total, perTeam:per, cfg:cfg, room:room, map:mapId, mode:mode,
@@ -699,9 +789,18 @@
       fields2:[], dirty2:new Uint8Array(n).fill(1),
       clock:2, tick:0, timeLeft:(opts.time === undefined ? DEFAULT.time : opts.time),
       rng:(opts.seed || 20261127) >>> 0, seed:opts.seed || 20261127,
-      result:null, stats:{ attacks:0, converts:0, heals:0 }, active:new Int32Array(n),
-      cursorSpeed:opts.cursorSpeed || 4, ai:[]
+      result:null, stats:{ attacks:0, converts:0, heals:0, teleports:0 }, active:new Int32Array(n),
+      cursorSpeed:opts.cursorSpeed || 4, ai:[],
+      // v8 新字段（均为 opt-in；默认值保证旧行为不变）
+      portals: opts.portals ? buildPortals(gw, gh, mapId, blocked) : [],
+      neutral: !!opts.neutral, neutralCount:0,
+      aiLevel: clamp(opts.aiLevel === undefined ? 1 : opts.aiLevel, 0, 2),
+      aiPersona: opts.aiPersona || 'classic',
+      dash: { active:0, cd:0, duration:(opts.dashDuration||0.9), cooldown:(opts.dashCooldown||5) },
+      milestones: [], events:[]
     };
+    // PHP 默认 -1（死亡），确保中立粒子放不满时不会留下 alive 的幽灵粒子
+    w.php.fill(-1);
     var rnd = makeRng(w.seed);
     for (var t = 0; t < n; t++) {
       var sp = teams[t];
@@ -721,10 +820,30 @@
       var sx=0, sy=0, cnt=0;
       for (var k=0;k<total;k++) if (w.pteam[k]===t && w.php[k]>=0) { sx+=w.px[k]; sy+=w.py[k]; cnt++; }
       if (cnt>0) { var cp=findPassableNear(blocked,gw,gh,Math.round(sx/cnt),Math.round(sy/cnt)); teams[t].gx=cp[0]; teams[t].gy=cp[1]; teams[t].x=cp[0]+0.5; teams[t].y=cp[1]+0.5; teams[t].tx=teams[t].x; teams[t].ty=teams[t].y; }
-      w.ai.push({ tx:teams[t].x, ty:teams[t].y, moveLeft:0, waitLeft:(seedMix(w.seed,t)%17), rng:(12345 + t*7919 + seedMix(w.seed,t)*2654435761)>>>0 });
+      w.ai.push({ tx:teams[t].x, ty:teams[t].y, moveLeft:0, waitLeft:(seedMix(w.seed,t)%17), rng:(12345 + t*7919 + seedMix(w.seed,t)*2654435761)>>>0, homeX:teams[t].x, homeY:teams[t].y });
+    }
+    // P0-3 中立争夺核心：从地图中心螺旋外扩，均匀铺开静止的中立珠
+    if (neutralPer > 0) {
+      var nc = findPassableNear(blocked, gw, gh, Math.round(gw/2), Math.round(gh/2));
+      var placedN = 0;
+      for (var rad = 0; rad < Math.max(gw, gh) && placedN < neutralPer; rad++) {
+        for (var yy = -rad; yy <= rad && placedN < neutralPer; yy++) {
+          for (var xx = -rad; xx <= rad && placedN < neutralPer; xx++) {
+            if (rad > 0 && Math.abs(xx) !== rad && Math.abs(yy) !== rad) continue;
+            if (place(w, nc[0]+xx, nc[1]+yy, NEUTRAL_TEAM, per*n+placedN)) placedN++;
+          }
+        }
+      }
+      w.neutralCount = placedN;
+      // 若放不满，收紧 total 到实际存活数，保证守恒判定成立
+      if (placedN !== neutralPer) {
+        var aliveN = 0;
+        for (var ak = 0; ak < total; ak++) if (w.php[ak] >= 0) aliveN++;
+        w.total = aliveN;
+      }
     }
     w.counts.fill(0);
-    for (var k2=0;k2<total;k2++) if (w.php[k2]>=0) w.counts[w.pteam[k2]]++;
+    for (var k2=0;k2<total;k2++) if (w.php[k2]>=0 && w.pteam[k2]>=0) w.counts[w.pteam[k2]]++;
     for (var q=0;q<n;q++) {
       w.fields.push(computeDistanceField(blocked,gw,gh,teams[q].gx,teams[q].gy));
       w.fields2.push(computeDistanceField(blocked,gw,gh,teams[q].gx2,teams[q].gy2));
@@ -740,39 +859,61 @@
     w.px[fi]=x; w.py[fi]=y; w.php[fi]=MAX_HP-1; w.pteam[fi]=team; w.places[i]=fi;
     return true;
   }
+  // P1-1 纯函数：传送一个粒子到目标格。占用冲突则放弃，绝不破坏 places/php 守恒
+  function teleport(w, fi, tx, ty) {
+    if (!inB(w.gw, w.gh, tx, ty)) return false;
+    var di = idx(w.gw, tx, ty);
+    if (w.blocked[di] || w.places[di] >= 0) return false;
+    var si = idx(w.gw, w.px[fi], w.py[fi]);
+    w.places[si] = -1; w.places[di] = fi;
+    w.px[fi] = tx; w.py[fi] = ty;
+    w.stats.teleports++;
+    return true;
+  }
   function nextRandom(w) { w.rng=(Math.imul(w.rng,1664525)+1013904223)>>>0; return w.rng/4294967296; }
   function seedMix(seed, t) { var h=(seed ^ Math.imul(t+1, 0x9e3779b9))>>>0; h^=h>>>16; h=Math.imul(h,0x85ebca6b)>>>0; h^=h>>>13; return h>>>0; }
   function aiRand(st) { st.rng^=st.rng<<13; st.rng^=st.rng>>>7; st.rng^=st.rng<<17; st.rng>>>=0; return st.rng/4294967296; }
 
   function aiStep(w, dt) {
+    var lv = AI_LEVELS[w.aiLevel] || AI_LEVELS[1];
+    var persona = w.aiPersona || 'classic';
     for (var t=1;t<w.nTeams;t++) {
       var tm=w.teams[t], st=w.ai[t];
+      if (tm.isAI === false) continue; // P1-3 本地双人：该队由人类控制，跳过 AI
       if (st.waitLeft>0) { st.waitLeft-=1; continue; }
       if (st.moveLeft>0) {
-        if (Math.abs(tm.x-st.tx)<=2 && Math.abs(tm.y-st.ty)<=2) { st.moveLeft=0; st.waitLeft=40+Math.floor(aiRand(st)*80); continue; }
+        if (Math.abs(tm.x-st.tx)<=2 && Math.abs(tm.y-st.ty)<=2) {
+          st.moveLeft=0; st.waitLeft=lv.waitBase+Math.floor(aiRand(st)*lv.waitVar); continue;
+        }
         st.moveLeft-=1;
-        if (st.moveLeft===0) st.waitLeft=40+Math.floor(aiRand(st)*80);
-        moveCursorToward(w, tm, st.tx, st.ty, dt); continue;
+        if (st.moveLeft===0) st.waitLeft=lv.waitBase+Math.floor(aiRand(st)*lv.waitVar);
+        moveCursorToward(w, tm, st.tx, st.ty, dt, lv.speed); continue;
       }
       var count=0, tries=0, pool=[];
-      while (tries<10000 && count<20) {
+      while (tries<10000 && count<lv.sample) {
         tries++;
         var i=Math.floor(aiRand(st)*w.total);
         if (w.php[i]<0 || w.pteam[i]===t) continue;
         var dx=Math.abs(w.px[i]-tm.x), dy=Math.abs(w.py[i]-tm.y);
-        pool.push([w.px[i],w.py[i],dx+dy]); count++;
+        var d=dx+dy;
+        // 人格评分：aggressive 偏好敌方密集方向，defensive 偏好己方半场，opportunist 偏好残血目标
+        var homeD = Math.abs(w.px[i]-st.homeX) + Math.abs(w.py[i]-st.homeY);
+        pool.push([w.px[i], w.py[i], d, w.php[i], homeD]); count++;
       }
       if (!pool.length) continue;
-      pool.sort(function(a,b){return a[2]-b[2];});
-      var pick=pool[Math.floor(aiRand(st)*Math.min(5,pool.length))];
+      if (persona === 'opportunist') pool.sort(function(a,b){ return a[3]-b[3] || a[2]-b[2]; });
+      else if (persona === 'defensive') pool.sort(function(a,b){ return a[4]-b[4] || a[2]-b[2]; });
+      else pool.sort(function(a,b){ return a[2]-b[2]; });
+      var pickCount = persona === 'aggressive' ? 1 : lv.pick;
+      var pick=pool[Math.floor(aiRand(st)*Math.min(pickCount,pool.length))];
       st.tx=pick[0]; st.ty=pick[1];
       var dist=Math.min(100, Math.max(Math.abs(pick[0]-tm.x), Math.abs(pick[1]-tm.y)));
       st.moveLeft=dist+5;
-      moveCursorToward(w, tm, st.tx, st.ty, dt);
+      moveCursorToward(w, tm, st.tx, st.ty, dt, lv.speed);
     }
   }
-  function moveCursorToward(w, tm, tx, ty, dt) {
-    var speed = (4 + (w.cursorSpeed || 4)) * 2.2 * dt * 60;
+  function moveCursorToward(w, tm, tx, ty, dt, speedMul) {
+    var speed = (4 + (w.cursorSpeed || 4)) * 2.2 * dt * 60 * (speedMul || 1);
     var dx=tx-tm.x, dy=ty-tm.y, len=Math.hypot(dx,dy);
     if (len<0.5) return;
     var step=Math.min(len,speed); dx=dx/len*step; dy=dy/len*step;
@@ -802,13 +943,44 @@
   }
   function movePlayerCursor(w, dt) {
     var tm=w.teams[0];
-    moveCursorToward(w, tm, tm.tx, tm.ty, dt);
+    // P1-2 冲刺：内核只读取 active 时长，速度倍率确定、不影响粒子守恒
+    var dashMul = (w.dash && w.dash.active > 0) ? 2.6 : 1;
+    moveCursorToward(w, tm, tm.tx, tm.ty, dt, dashMul);
     if (tm.split) moveCursor2Toward(w, tm, tm.tx2, tm.ty2, dt);
+    // P1-3 本地双人：第 2 队若被标记为人类，使用其目标点而非 AI
+    if (w.nTeams > 1 && w.teams[1].isAI === false) {
+      var p2 = w.teams[1];
+      moveCursorToward(w, p2, p2.tx, p2.ty, dt);
+    }
   }
 
+  // P2-3 纯函数：里程碑检测。events 只追加一次，UI 按索引消费
+  function checkMilestones(w) {
+    var ms = w.milestones;
+    function add(id, text) {
+      for (var a = 0; a < ms.length; a++) if (ms[a].id === id) return;
+      ms.push({ id:id, text:text, tick:w.tick });
+      w.events.push({ id:id, text:text, tick:w.tick });
+    }
+    if (w.stats.converts >= 1) add('first_convert', '首次同化敌军');
+    if (w.stats.converts >= 10) add('convert10', '累计同化 10 名敌军');
+    if (w.stats.converts >= 30) add('convert30', '累计同化 30 名敌军');
+    var mine = w.counts[0] || 0, total = w.total || 1;
+    if (mine >= total * 0.25) add('quarter', '部队规模达到 25%');
+    if (mine >= total * 0.50) add('half', '部队规模达到 50%');
+    if (mine >= total * 0.75) add('threequarter', '部队规模达到 75%');
+    for (var t = 1; t < w.nTeams; t++) {
+      if (w.counts[t] === 0 && w.mode !== 'elimination') continue;
+      if (w.counts[t] === 0) add('elim'+t, w.teams[t].name + ' 已被淘汰');
+    }
+  }
   function step(w, dt) {
     if (w.result && w.result.over) return w;
     w.tick++; w.clock++;
+    if (w.dash) {
+      if (w.dash.active > 0) w.dash.active = Math.max(0, w.dash.active - dt);
+      if (w.dash.cd > 0) w.dash.cd = Math.max(0, w.dash.cd - dt);
+    }
     aiStep(w, dt);
     movePlayerCursor(w, dt);
     for (var t=0;t<w.nTeams;t++) {
@@ -822,12 +994,14 @@
       }
     }
     w.active.fill(0);
-    for (var k=0;k<w.total;k++) if (w.php[k]>=0) w.active[w.pteam[k]]++;
+    for (var k=0;k<w.total;k++) if (w.php[k]>=0 && w.pteam[k]>=0) w.active[w.pteam[k]]++;
     var cp = computeCombatParams(w.active, w.nTeams, w.total, w.cfg.attack, w.cfg.defense, w.cfg.health, w.cfg.influence);
     var table = (w.clock/3|0) % 2, start = (w.clock/6|0) % 12;
     var hz = Math.max(1, MAX_HP >> 5); // 地形伤害/治疗强度，避免秒变 0
     for (var fi=0; fi<w.total; fi++) {
       if (w.php[fi]<0) continue;
+      // P0-3 中立粒子静止：不移动、不主动攻击；但仍作为他人攻击目标参与同化
+      if (w.pteam[fi] < 0) continue;
       var team=w.pteam[fi], fx=w.px[fi], fy=w.py[fi];
       var hereTile=w.terrain[idx(w.gw,fx,fy)];
       // v4 地形血量：危险扣血、治疗回血；terrainHealth 保证 php>=0，粒子守恒不被破坏
@@ -855,7 +1029,18 @@
           }
         }
       }
-      if (moved) continue;
+      if (moved) {
+        // P1-1 传送门：踏入入口即传到出口（出口被占则留在原地），双向可用
+        if (w.portals && w.portals.length) {
+          var cur = idx(w.gw, w.px[fi], w.py[fi]);
+          for (var pi = 0; pi < w.portals.length; pi++) {
+            var pl = w.portals[pi];
+            if (cur === idx(w.gw, pl.ax, pl.ay)) { teleport(w, fi, pl.bx, pl.by); break; }
+            if (cur === idx(w.gw, pl.bx, pl.by)) { teleport(w, fi, pl.ax, pl.ay); break; }
+          }
+        }
+        continue;
+      }
       var ni0=tried[0], tf=w.places[ni0];
       if (tf>=0 && tf!==fi && w.pteam[tf]!==team) {
         var res=combatOutcome(w.pteam[tf],w.php[tf],team,true,cp.attack[team],cp.health[team]);
@@ -880,8 +1065,10 @@
       }
     }
     w.counts.fill(0);
-    for (var k3=0;k3<w.total;k3++) if (w.php[k3]>=0) w.counts[w.pteam[k3]]++;
+    for (var k3=0;k3<w.total;k3++) if (w.php[k3]>=0 && w.pteam[k3]>=0) w.counts[w.pteam[k3]]++;
     w.timeLeft=Math.max(0,w.timeLeft-dt);
+    // P2-3 战况里程碑：只在状态首次跨过阈值时写入 events，供 UI 弹提示
+    checkMilestones(w);
     // 胜负判定统一为两条铁律(v5.0.0 修复)：某队吞并全部粒子，或时间到按粒子最多者胜。
     // 据点仅作战术目标展示（进度/控制者），不提前终止战斗、不改变胜负。
     var base=judgeWinner(w.counts,w.total,w.timeLeft);
@@ -904,10 +1091,13 @@
     for (var i=0;i<n;i++) buf32[i]=w.blocked[i] ? 0xff38332a : 0xff1b1512;
     var pal=[];
     for (var t=0;t<w.nTeams;t++) { pal[t]=[]; for (var l=0;l<7;l++) pal[t][l]=hexToAbgr(TEAM_COLORS[t],l); }
+    pal[TEAM_COLORS.length]=[];
+    for (var nl=0;nl<7;nl++) pal[TEAM_COLORS.length][nl]=hexToAbgr('#9BA3AE',nl);
     for (var fi=0;fi<w.total;fi++) {
       if (w.php[fi]<0) continue;
       var lvl=Math.min(6, Math.floor(w.php[fi]/(MAX_HP-1)*6));
-      buf32[idx(w.gw,w.px[fi],w.py[fi])]=pal[w.pteam[fi]][lvl];
+      var pt=w.pteam[fi];
+      buf32[idx(w.gw,w.px[fi],w.py[fi])]=pal[pt<0?TEAM_COLORS.length:pt][lvl];
     }
   }
 
@@ -926,6 +1116,13 @@
         var base = 0.58 + 0.42 * l / 6;
         pal[t][l] = { body: shade(TEAM_COLORS[t], base), hi: shade(TEAM_COLORS[t], Math.min(1.32, base * 1.30)), lo: shade(TEAM_COLORS[t], base * 0.62) };
       }
+    }
+    // v8：中立粒子调色板（灰白珠），索引 = TEAM_COLORS.length
+    var neutralHex = '#9BA3AE';
+    pal[TEAM_COLORS.length] = [];
+    for (var nl = 0; nl < 7; nl++) {
+      var nb = 0.58 + 0.42 * nl / 6;
+      pal[TEAM_COLORS.length][nl] = { body: shade(neutralHex, nb), hi: shade(neutralHex, Math.min(1.32, nb*1.30)), lo: shade(neutralHex, nb*0.62) };
     }
     return pal;
   }
@@ -969,7 +1166,7 @@
     for (var fi = 0; fi < w.total; fi++) {
       if (w.php[fi] < 0) continue;
       var lv = Math.min(6, Math.floor(w.php[fi] / (MAX_HP - 1) * 6));
-      var pc = pal[w.pteam[fi]][lv];
+      var pt8 = w.pteam[fi]; var pc = pal[pt8 < 0 ? TEAM_COLORS.length : pt8][lv];
       var ox0 = w.px[fi] * scale, oy0 = w.py[fi] * scale;
       for (var py = 0; py < scale; py++) for (var px = 0; px < scale; px++) {
         var dx = px - c, dy = py - c, d2 = dx * dx + dy * dy;
@@ -987,8 +1184,10 @@
     computeCombatParams:computeCombatParams, combatOutcome:combatOutcome, healOutcome:healOutcome,
     terrainHealth:terrainHealth, terrainMoves:terrainMoves, terrainAllowsMove:terrainAllowsMove,
     computeDistanceField:computeDistanceField, gradientAt:gradientAt, vecToDir:vecToDir,
-    buildArena:buildArena, buildTerrain:buildTerrain, spawnSpots:spawnSpots, findPassableNear:findPassableNear,
+    buildArena:buildArena, buildTerrain:buildTerrain, buildPortals:buildPortals, spawnSpots:spawnSpots, findPassableNear:findPassableNear,
     judgeWinner:judgeWinner, strongholdOutcome:strongholdOutcome, createWorld:createWorld, step:step, renderField:renderField,
+    teleport:teleport, checkMilestones:checkMilestones,
+    NEUTRAL_TEAM:NEUTRAL_TEAM, AI_LEVELS:AI_LEVELS, AI_PERSONAS:AI_PERSONAS, PORTAL_DEFS:PORTAL_DEFS,
     RENDER_SCALE:RENDER_SCALE, beadPalette:beadPalette, renderBeads:renderBeads, ring:ring, line:line
   };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1027,8 +1226,16 @@
         mode:s.mode||'elimination', tactic:s.tactic||'balanced',
         rules:{ attack:s.rules&&s.rules.attack!==undefined?s.rules.attack:8, defense:s.rules&&s.rules.defense!==undefined?s.rules.defense:8,
           health:s.rules&&s.rules.health!==undefined?s.rules.health:8, influence:s.rules&&s.rules.influence!==undefined?s.rules.influence:8,
-          army:s.rules&&s.rules.army!==undefined?s.rules.army:16 } };
-    } catch (e) { return { n:4, modes:['human','cpu','cpu','cpu','cpu','cpu'], map:'classic', mode:'elimination', tactic:'balanced', rules:{attack:8,defense:8,health:8,influence:8,army:16} }; }
+          army:s.rules&&s.rules.army!==undefined?s.rules.army:16 },
+        // v8：新玩法默认关闭（随机种子默认开），旧存档自动补齐
+        seedRandom:s.seedRandom===undefined?true:!!s.seedRandom,
+        fixedSeed:s.fixedSeed||20261127,
+        aiLevel:s.aiLevel===undefined?1:(s.aiLevel|0),
+        aiPersona:s.aiPersona||'classic',
+        neutral:!!s.neutral, portals:!!s.portals, shuffleTerrain:!!s.shuffleTerrain, dash:s.dash===undefined?true:!!s.dash };
+    } catch (e) { return { n:4, modes:['human','cpu','cpu','cpu','cpu','cpu'], map:'classic', mode:'elimination', tactic:'balanced',
+      rules:{attack:8,defense:8,health:8,influence:8,army:16},
+      seedRandom:true, fixedSeed:20261127, aiLevel:1, aiPersona:'classic', neutral:false, portals:false, shuffleTerrain:false, dash:true }; }
   }
   function saveSetup() { try { localStorage.setItem('lw2setup', JSON.stringify(setup)); } catch (e) {} }
   function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
@@ -1103,6 +1310,7 @@
     else if (kind==='win') { tone(523,0.6,'triangle',0.4); setTimeout(function(){tone(659,0.6,'triangle',0.4);},120); setTimeout(function(){tone(784,0.8,'triangle',0.4);},240); }
     else if (kind==='lose') tone(180,0.9,'sawtooth',0.3,90);
     else if (kind==='splash') noise(0.12,0.2);
+    else if (kind==='dash') tone(880,0.18,'sawtooth',0.25,1760);
   }
   function applyVolumes() {
     if (!audio) return;
@@ -1114,22 +1322,22 @@
   // ===== 设置页 =====
   function buildSlots() {
     var box = $('slots'); box.innerHTML='';
-    for (var i=0;i<6;i++) {
+    for (var i=0;i<6;i++) (function (si) {
       var row=document.createElement('div'); row.className='slot';
-      var sw=document.createElement('i'); sw.className='sw'; sw.style.background=L.TEAM_COLORS[i];
-      var nm=document.createElement('span'); nm.className='nm'; nm.textContent=L.TEAM_NAMES[i];
+      var sw=document.createElement('i'); sw.className='sw'; sw.style.background=L.TEAM_COLORS[si];
+      var nm=document.createElement('span'); nm.className='nm'; nm.textContent=L.TEAM_NAMES[si];
       var modes=document.createElement('div'); modes.className='modes';
       ['human','cpu','off'].forEach(function (m) {
         var b=document.createElement('button'); b.type='button'; b.textContent=m.toUpperCase();
-        b.className = setup.modes[i]===m ? 'on' : '';
+        b.className = setup.modes[si]===m ? 'on' : '';
         b.onclick=function(){
-          if (m==='human') { for (var j=0;j<6;j++) if (setup.modes[j]==='human') setup.modes[j]='cpu'; }
-          setup.modes[i]=m; saveSetup(); buildSlots();
+          // v8：不再强制单一 HUMAN，可设第二人为 P2 同屏对战
+          setup.modes[si]=m; saveSetup(); buildSlots();
         };
         modes.appendChild(b);
       });
       row.appendChild(sw); row.appendChild(nm); row.appendChild(modes); box.appendChild(row);
-    }
+    })(i);
   }
   // v4：模式选择（吞并 / 据点争夺）
   function buildModesel() {
@@ -1198,6 +1406,43 @@
     });
   }
 
+  // v8：AI 难度 / 人格选择
+  function buildAIPick() {
+    var lv=$('ailevel'); lv.innerHTML='';
+    L.AI_LEVELS.forEach(function(d,i){
+      var b=document.createElement('button'); b.type='button'; b.textContent=d.name;
+      b.title='采样 '+d.sample+' · 候选 '+d.pick+' · 速度 ×'+d.speed;
+      b.className=setup.aiLevel===i?'on':'';
+      b.onclick=function(){ setup.aiLevel=i; saveSetup(); buildAIPick(); };
+      lv.appendChild(b);
+    });
+    var ps=$('aipersona'); ps.innerHTML='';
+    L.AI_PERSONAS.forEach(function(d){
+      var b=document.createElement('button'); b.type='button'; b.textContent=d.name; b.title=d.desc;
+      b.className=setup.aiPersona===d.id?'on':'';
+      b.onclick=function(){ setup.aiPersona=d.id; saveSetup(); buildAIPick(); };
+      ps.appendChild(b);
+    });
+  }
+  // v8：玩法开关（中立核心 / 传送门 / 地形扰动 / 冲刺 / 随机种子）
+  var TOGGLE_DEFS = [
+    { k:'seedRandom',     name:'◈ 每局随机种子',   desc:'每局不同 AI 节奏；关闭可复现对局' },
+    { k:'neutral',        name:'○ 中立争夺核心',   desc:'地图中央生成可被吞并的中立珠' },
+    { k:'portals',        name:'◎ 传送门',         desc:'踏入即瞬移（twin/maze/spiral/flower 地图）' },
+    { k:'shuffleTerrain', name:'⟳ 地形随局扰动',   desc:'每局按种子镜像地块，连通性不变' },
+    { k:'dash',           name:'» 冲刺技能',       desc:'Q 键 / 鼠标右键加速光标 2.6×' }
+  ];
+  function buildToggles() {
+    var box=$('toggles'); box.innerHTML='';
+    TOGGLE_DEFS.forEach(function(d){
+      var row=document.createElement('div'); row.className='toggle-row'+(setup[d.k]?' on':'');
+      var span=document.createElement('span'); span.innerHTML='<b>'+d.name+'</b><small>'+d.desc+'</small>';
+      var sw=document.createElement('i');
+      row.appendChild(span); row.appendChild(sw);
+      row.onclick=function(){ setup[d.k]=!setup[d.k]; saveSetup(); buildToggles(); };
+      box.appendChild(row);
+    });
+  }
   // ===== 渲染 =====
   function drawArena() {
     if (!world) return;
@@ -1213,6 +1458,28 @@
       ctx.globalAlpha=0.8;
       ctx.beginPath(); ctx.arc(sh.x*SCALE,sh.y*SCALE,sh.r*SCALE,0,6.2831853); ctx.stroke();
       ctx.restore();
+    }
+    // v8 P1-1 传送门可视化：双色环 + 横线标识
+    if (world.portals && world.portals.length) {
+      ctx.save(); ctx.lineWidth=2;
+      for (var pi=0;pi<world.portals.length;pi++) {
+        var pl=world.portals[pi], pcol=(pi%2)?'#9BA3AE':'#E8A33D';
+        ctx.strokeStyle=pcol; ctx.globalAlpha=0.75;
+        var pp=[[pl.ax,pl.ay],[pl.bx,pl.by]];
+        for (var pj=0;pj<2;pj++) {
+          var tpx=pp[pj][0]*SCALE, tpy=pp[pj][1]*SCALE;
+          ctx.beginPath(); ctx.arc(tpx,tpy,SCALE*0.75,0,6.2831853); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(tpx-SCALE*0.4,tpy); ctx.lineTo(tpx+SCALE*0.4,tpy); ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+    // v8 P1-2 冲刺光环
+    if (world.dash && world.dash.active>0 && world.teams[0]) {
+      var dm=world.teams[0];
+      ctx.strokeStyle='#E8A33D'; ctx.globalAlpha=0.9; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(dm.x*SCALE,dm.y*SCALE,14+Math.sin(world.tick*0.5)*3,0,6.2831853); ctx.stroke();
+      ctx.globalAlpha=1;
     }
     // 玩家目标点光圈（脉动），指示光标正前往的位置
     var me=world.teams[0];
@@ -1249,7 +1516,7 @@
       var tm=world.teams[t], row=document.createElement('div'); row.className='team';
       var sw=document.createElement('i'); sw.className='sw'; sw.style.background=tm.color;
       var nm=document.createElement('span'); nm.className='nm';
-      nm.innerHTML=tm.name+'<em>'+(tm.isAI?'CPU':'P1')+'</em>';
+      nm.innerHTML=tm.name+'<em>'+(tm.isAI?'CPU':(t===0?'P1':'P'+(t+1)))+'</em>';
       var ct=document.createElement('span'); ct.className='ct'; ct.textContent=world.counts[t];
       var bar=document.createElement('div'); bar.className='bar';
       var fill=document.createElement('i'); fill.style.background=tm.color; fill.style.width='0%';
@@ -1260,6 +1527,13 @@
     for (var q=0;q<world.nTeams;q++) {
       var seg=document.createElement('i'); seg.style.background=world.teams[q].color; seg.style.width='0%';
       seg.title=world.teams[q].name; share.appendChild(seg);
+    }
+    // v8 P0-3：中立核心剩余数（仅在开启时显示）
+    var oldN=$('neutral-row'); if (oldN) oldN.parentNode.removeChild(oldN);
+    if (world.neutral) {
+      var nr=document.createElement('div'); nr.className='team'; nr.id='neutral-row';
+      nr.innerHTML='<i class="sw" style="background:#9BA3AE"></i><span class="nm">中立核心<em>可吞并</em></span><span class="ct" id="neutral-ct">'+world.neutralCount+'</span>';
+      $('teams').appendChild(nr);
     }
   }
   function updateHud() {
@@ -1281,6 +1555,13 @@
       $('terrain-now').innerHTML='<i style="background:'+info.color+'"></i>'+info.name;
       $('terrain-desc').textContent=info.desc;
     }
+    // v8 P1-2 冲刺状态：就绪 / 冲刺中 / 冷却读秒
+    if (world.dash) {
+      var ready=world.dash.cd<=0 && world.dash.active<=0;
+      var pct=ready?100:(world.dash.active>0?100:(1-world.dash.cd/world.dash.cooldown)*100);
+      $('dashfill').style.width=pct.toFixed(0)+'%';
+      $('dashlabel').textContent=ready?'READY':(world.dash.active>0?'DASH!':Math.ceil(world.dash.cd)+'s');
+    }
     var segs=$('share').children;
     for (var t=0;t<world.nTeams;t++) {
       if (hudRows[t]) {
@@ -1288,6 +1569,11 @@
         hudRows[t].fill.style.width=(world.counts[t]/world.total*100).toFixed(1)+'%';
       }
       if (segs[t]) segs[t].style.width=(world.counts[t]/world.total*100).toFixed(1)+'%';
+    }
+    if (world.neutral && $('neutral-ct')) {
+      var nc=0;
+      for (var ni=0;ni<world.total;ni++) if (world.php[ni]>=0 && world.pteam[ni]<0) nc++;
+      $('neutral-ct').textContent=nc;
     }
   }
 
@@ -1310,18 +1596,25 @@
     for (var i=0;i<6;i++) if (setup.modes[i]!=='off') order.push(i);
     if (!order.length) order=[0,1,2,3];
     var hasHuman=order.some(function(i){return setup.modes[i]==='human';});
+    // v8：人类队伍排前面，确保第 0 队始终由鼠标控制，其余人类队走 IJKL
+    order.sort(function(a,b){ var ha=setup.modes[a]==='human'?0:1, hb=setup.modes[b]==='human'?0:1; return ha-hb; });
+    var seed = setup.seedRandom ? ((Math.random()*4294967296)>>>0) : (setup.fixedSeed || 20261127);
+    window.__lwSeed = seed;
     world=L.createWorld({ teams:n, map:setup.map, mode:setup.mode, attack:setup.rules.attack, defense:setup.rules.defense,
       health:setup.rules.health, influence:setup.rules.influence, army:setup.rules.army,
-      cursorSpeed:opts.cursor, seed:20261127, time:180 });
+      cursorSpeed:opts.cursor, seed:seed, time:180,
+      aiLevel:setup.aiLevel, aiPersona:setup.aiPersona,
+      neutral:setup.neutral, portals:setup.portals, shuffleTerrain:setup.shuffleTerrain });
     // 按 setup 的颜色模式重映射队伍颜色标签（human 优先第 0 队）
     world.teams.forEach(function(tm,i){
       var src=order[i];
       tm.name=L.TEAM_NAMES[src];
       tm.color=L.TEAM_COLORS[src];
-      tm.isAI=!(i===0 && hasHuman);
+      tm.isAI=setup.modes[src]!=='human';
     });
     world.cursorSpeed=opts.cursor;
     paused=false; finished=false; acc=0; last=0;
+    lastEvent=0; $('toasts').innerHTML='';
     $('pausebox').classList.add('hidden'); $('resultbox').classList.add('hidden');
     $('holdbox').classList.toggle('hidden', setup.mode!=='stronghold');
     $('splittip').classList.add('hidden');
@@ -1342,6 +1635,15 @@
     var share=Math.round(world.counts[r.winner]/world.total*100);
     var used=Math.round((180-world.timeLeft));
     $('result-detail').innerHTML='占比 '+share+'% · 用时 '+used+' 秒<br>'+world.teams.map(function(tm,i){return tm.name+' '+world.counts[i];}).join(' · ');
+    // P2-1 战斗结算统计页
+    var ms=world.milestones.map(function(x){return x.text;}).join('、')||'无';
+    $('result-stats').innerHTML=
+      '<span>本局种子</span><b>'+(window.__lwSeed||0)+'</b>'+
+      '<span>攻击次数</span><b>'+world.stats.attacks+'</b>'+
+      '<span>同化次数</span><b>'+world.stats.converts+'</b>'+
+      '<span>友军治疗</span><b>'+world.stats.heals+'</b>'+
+      '<span>传送次数</span><b>'+world.stats.teleports+'</b>'+
+      '<span>里程碑</span><b class="wide">'+ms+'</b>';
     $('resultbox').classList.remove('hidden');
     sfx(r.winner===0?'win':'lose');
   }
@@ -1355,6 +1657,20 @@
   // ===== 输入 =====
   cv.addEventListener('pointerdown', function(e){ cv.setPointerCapture(e.pointerId); aim(e,true); });
   cv.addEventListener('pointermove', function(e){ aim(e,false); });
+  cv.addEventListener('contextmenu', function(e){ e.preventDefault(); tryDash(); });
+  // v8：里程碑 / 冲刺提示
+  function toast(text) {
+    var box=$('toasts'); if (!box) return;
+    var d=document.createElement('div'); d.className='toast'; d.textContent=text;
+    box.appendChild(d);
+    setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); },260); },1500);
+  }
+  function tryDash() {
+    if (!world || finished || paused || countdownTimer || !setup.dash) return;
+    if (world.dash.cd>0 || world.dash.active>0) return;
+    world.dash.active=world.dash.duration; world.dash.cd=world.dash.cooldown;
+    sfx('dash'); toast('» DASH!');
+  }
   function setSplit(on) {
     if (!world) return;
     var tm=world.teams[0];
@@ -1381,6 +1697,7 @@
     if (k==='escape'||k===' ') { e.preventDefault(); togglePause(); }
     if (k==='r' && world && !countdownTimer) restart();
     if (k==='f' && world && !finished && !countdownTimer) setSplit(!world.teams[0].split);
+    if (k==='q' && world && !finished && !countdownTimer) tryDash();
   });
   window.addEventListener('keyup', function(e){ keys[e.key.toLowerCase()]=false; });
   function nudge() {
@@ -1391,10 +1708,19 @@
     if (keys['w']||keys['arrowup']) tm.ty-=d;
     if (keys['s']||keys['arrowdown']) tm.ty+=d;
     tm.tx=clamp(tm.tx,2,world.width-3); tm.ty=clamp(tm.ty,2,world.height-3);
+    // P1-3 本地双人：第 2 队用 IJKL 微调
+    if (world.nTeams>1 && world.teams[1].isAI===false) {
+      var p2=world.teams[1], d2=(2+opts.cursor)*1.5;
+      if (keys['j']) p2.tx-=d2;
+      if (keys['l']) p2.tx+=d2;
+      if (keys['i']) p2.ty-=d2;
+      if (keys['k']) p2.ty+=d2;
+      p2.tx=clamp(p2.tx,2,world.width-3); p2.ty=clamp(p2.ty,2,world.height-3);
+    }
   }
 
   // ===== 主循环 =====
-  var lastConverts=0;
+  var lastConverts=0, lastEvent=0;
   function frame(ts) {
     if (!last) last=ts;
     var dt=(ts-last)/1000; last=ts;
@@ -1406,6 +1732,9 @@
         while (acc>=STEP && guard++<8) { L.step(world,STEP); acc-=STEP; }
         var dc=world.stats.converts-lastConverts;
         if (dc>0) { lastConverts=world.stats.converts; sfx('convert'); }
+        while (lastEvent < (world.events ? world.events.length : 0)) {
+          toast(world.events[lastEvent].text); lastEvent++;
+        }
         if (world.result && world.result.over) endGame();
       }
       drawArena();
@@ -1422,6 +1751,14 @@
       for (var i=0;i<6;i++) setup.modes[i] = i<n ? (i===0?"human":"cpu") : "off";
       ['attack','defense','health','influence','army'].forEach(function(k){ setup.rules[k]=Math.floor(Math.random()*17)+8; });
       setup.rules.army=16; setup.rules.influence=8;
+      // v8：随机对局同时随机新玩法开关，且每局强制换种子
+      setup.seedRandom=true;
+      setup.neutral=Math.random()<0.55;
+      setup.portals=Math.random()<0.5;
+      setup.shuffleTerrain=Math.random()<0.5;
+      setup.dash=true;
+      setup.aiLevel=Math.floor(Math.random()*3);
+      setup.aiPersona=L.AI_PERSONAS[Math.floor(Math.random()*L.AI_PERSONAS.length)].id;
       saveSetup();
     }
     var cd=$('countdown'); cd.classList.add('hidden');
@@ -1430,7 +1767,7 @@
   // ===== 按钮绑定 =====
   $('btn-quick').onclick=function(){ quickStart(false); };
   $('btn-random').onclick=function(){ quickStart(true); };
-  $('btn-single').onclick=function(){ buildModesel(); buildSlots(); buildTactics(); buildRules(); buildMaps(); show('view-setup'); };
+  $('btn-single').onclick=function(){ buildModesel(); buildSlots(); buildTactics(); buildRules(); buildMaps(); buildAIPick(); buildToggles(); show('view-setup'); };
   $('btn-options').onclick=function(){ show('view-options'); };
   $('btn-about').onclick=function(){ show('view-about'); };
   $('btn-setup-back').onclick=function(){ show('view-menu'); };
@@ -1465,6 +1802,20 @@
     setSplit:function(on){ if (world){ world.teams[0].split=!!on; document.getElementById('splittip').classList.toggle('hidden',!on); } },
     aim2:function(x,y){ if (world){ world.teams[0].tx2=x; world.teams[0].ty2=y; } },
     setMode:function(m){ setup.mode=m; saveSetup(); },
+    setOptions:function(o){
+      if (o.aiLevel!==undefined) setup.aiLevel=o.aiLevel|0;
+      if (o.aiPersona!==undefined) setup.aiPersona=o.aiPersona;
+      if (o.neutral!==undefined) setup.neutral=!!o.neutral;
+      if (o.portals!==undefined) setup.portals=!!o.portals;
+      if (o.shuffleTerrain!==undefined) setup.shuffleTerrain=!!o.shuffleTerrain;
+      if (o.seedRandom!==undefined) setup.seedRandom=!!o.seedRandom;
+      if (o.fixedSeed!==undefined) setup.fixedSeed=o.fixedSeed>>>0;
+      if (o.dash!==undefined) setup.dash=!!o.dash;
+      if (o.map!==undefined) setup.map=o.map;
+      saveSetup(); return true;
+    },
+    dash:function(){ tryDash(); if(world) return {active:world.dash.active,cd:world.dash.cd}; return null; },
+    getSeed:function(){ return window.__lwSeed || 0; },
     applyTactic:function(id){ var p=L.TACTICS.filter(function(x){return x.id===id;})[0]; if(!p)return false; setup.tactic=id; ['attack','defense','health','influence','army'].forEach(function(k){setup.rules[k]=p[k];}); saveSetup(); return true; }
   };
 
