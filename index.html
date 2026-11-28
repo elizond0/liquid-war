@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="build" content="v8.1.0 · 2026-11-28 18:40">
+<meta name="build" content="v9.0.0 · 2026-11-28 18:55">
 <link rel="icon" href="data:,">
 <title>液态战争 · LIQUID WAR.IO</title>
 <style>
@@ -95,6 +95,9 @@
   .toggle-row.on i{background:var(--accent);border-color:var(--accent)}
   .toggle-row.on i:after{left:15px;background:var(--bg)}
   .dashbox{margin-top:14px}
+  #levels{max-height:none}
+  .mapcard.locked{opacity:.75;cursor:not-allowed;background:#14161a}
+  .mapcard.cleared{border-color:var(--accent);color:var(--accent)}
   .dashbox .bar{height:4px;background:var(--line-soft)}
   .dashbox .bar i{display:block;height:4px;background:var(--accent);width:100%}
   .dash-hint{font:9px/1.5 var(--mono);color:var(--faint);margin:4px 0 0}
@@ -173,11 +176,21 @@
           <div class="name"><label for="pname">Name</label><input id="pname" type="text" maxlength="12" value="Player"></div>
           <button class="btn primary" id="btn-quick">⚡ 快速开始 <span class="arrow">→</span></button>
           <button class="btn" id="btn-single">Single Player <span class="arrow">→</span></button>
+          <button class="btn" id="btn-campaign">🏁 关卡闯关 <span class="arrow">→</span></button>
           <button class="btn" id="btn-random">🎲 随机对局 <span class="arrow">→</span></button>
           <button class="btn" id="btn-options">Options <span class="arrow">→</span></button>
           <button class="btn" id="btn-about">About <span class="arrow">→</span></button>
         </div>
         <p class="note">快速开始沿用上次设置直接开局；随机对局随机地图与队伍。</p>
+      </div>
+    </section>
+
+    <section id="view-levels" class="view hidden">
+      <div class="panel">
+        <p class="phead">Campaign · 关卡闯关</p>
+        <p class="note" id="campaign-progress">进度读取中…</p>
+        <div class="maps" id="levels"></div>
+        <div class="actions" style="margin-top:18px"><button class="btn" id="btn-levels-back">← Back</button></div>
       </div>
     </section>
 
@@ -190,7 +203,6 @@
             <div class="modesel" id="modesel"></div>
             <p class="sect">Teams</p>
             <div id="slots"></div>
-            <p class="dash-hint">本地同屏最多 2 名 HUMAN：P1 鼠标+WASD+Q，P2 用 IJKL+.(冲刺)+U(分兵)</p>
             <p class="sect" style="margin-top:18px">Tactics · 战术预设</p>
             <div class="tactics" id="tactics"></div>
             <p class="sect">Rules</p>
@@ -235,7 +247,8 @@
             <span class="win" id="result-reason">DOMINATION</span>
             <h3 id="result-title">WIN</h3>
             <div id="result-detail" style="font:11px/1.7 var(--mono);color:var(--dim);text-align:center"></div>
-            <div class="stats-table" id="result-stats"></div>
+            <div class="stats" id="result-stats"></div>
+            <p class="split-tip hidden" id="result-campaign"></p>
             <button class="btn" id="btn-again">Play Again</button>
             <button class="btn" id="btn-result-menu">Main Menu</button>
           </div>
@@ -265,13 +278,9 @@
             <p class="sect" style="margin-top:14px">Dash · 冲刺 <b id="dashlabel" style="float:right;color:var(--accent)">READY</b></p>
             <div class="bar"><i id="dashfill"></i></div>
             <p class="dash-hint">Q 键 / 鼠标右键 · 光标加速 2.6×</p>
-            <div id="dash2box" class="hidden" style="margin-top:10px">
-              <p class="sect" style="margin-top:0">P2 Dash <b id="dash2label" style="float:right;color:#7DD3FC">READY</b></p>
-              <div class="bar"><i id="dash2fill" style="background:#7DD3FC"></i></div>
-            </div>
           </div>
-          <p class="split-tip hidden" id="splittip">◈ P1 分兵中 · Shift+点击移动副场 · F 键关闭（P2 按 U 分兵）</p>
-          <p class="keys"><b>P1</b> 鼠标指向 / WASD 微调 · Q 冲刺 · Shift+点击 或 F 分兵<br><b>P2</b> IJKL 移动光标 · <b>.</b> 冲刺 · <b>U</b> 分兵<br><b>Esc/空格</b> 暂停 · <b>R</b> 重开（同屏最多 2 人）</p>
+          <p class="split-tip hidden" id="splittip">◈ 双光标分兵中 · Shift+点击移动副场 · F 键关闭</p>
+          <p class="keys"><b>鼠标 / 触摸</b> 指向目标<br><b>Shift+点击</b> 分兵第二路 · <b>F</b> 开关<br><b>WASD / ↑←↓→</b> 微调<br><b>Q / 右键</b> 冲刺 · <b>Esc / 空格</b> 暂停 · <b>R</b> 重开</p>
         </aside>
       </div>
     </section>
@@ -317,7 +326,7 @@
   </main>
 
   <footer>
-    <span data-build>v8.1.0 · 2026-11-28 18:40</span>
+    <span data-build>v9.0.0 · 2026-11-28 18:55</span>
     <span>LW5 战斗模型 · 12 方向梯度 · 确定性单测</span>
   </footer>
 </div>
@@ -593,11 +602,13 @@
       line(b,gw,gh,2,gh-3,hx,gh-Math.round(cy*0.45),t);
       line(b,gw,gh,gw-3,gh-3,gw-hx,gh-Math.round(cy*0.45),t);
     }},
-    { id:'lanes', name:'三道闸', build:function(b,gw,gh){
-      var t=Math.max(2,Math.round(gw*0.012)), g1=Math.round(gw*0.25), g2=Math.round(gw*0.75);
+    { id:'lanes', name:'三道闸·阔口', build:function(b,gw,gh){
+      // v9：开口从 5 格扩到 15 格，消除粒子在闸口长期对峙
+      var t=Math.max(2,Math.round(gw*0.012)), half=Math.round(gw*0.0375);
+      var g1=Math.round(gw*0.28), g2=Math.round(gw*0.72);
       [0.3,0.5,0.7].forEach(function(f,i){
         var y=Math.round(gh*f), gap=i%2===0?g1:g2;
-        rect(b,gw,gh,2,y,gap-2,y+t-1); rect(b,gw,gh,gap+2,y,gw-3,y+t-1);
+        rect(b,gw,gh,2,y,gap-half,y+t-1); rect(b,gw,gh,gap+half,y,gw-3,y+t-1);
       });
     }},
     { id:'diamond', name:'菱形阵', build:function(b,gw,gh){
@@ -610,14 +621,70 @@
     }},
     { id:'waves', name:'潮汐波纹', build:function(b,gw,gh){
       var t=Math.max(2,Math.round(gw*0.012));
-      var gapA=Math.round(gw*0.30), gapB=Math.round(gw*0.70);
+      var gapA=Math.round(gw*0.30), gapB=Math.round(gw*0.70), half=Math.round(gw*0.0375);
       for(var x=2;x<gw-2;x++){
-        if(x>gapA-3&&x<gapA+3) continue;
-        if(x>gapB-3&&x<gapB+3) continue;
+        if(x>gapA-half&&x<gapA+half) continue;
+        if(x>gapB-half&&x<gapB+half) continue;
         var y1=Math.round(gh*0.36+Math.sin(x*0.09)*gh*0.07);
         var y2=Math.round(gh*0.64+Math.sin(x*0.09+2.1)*gh*0.07);
         rect(b,gw,gh,x,y1,x,y1+t-1); rect(b,gw,gh,x,y2,x,y2+t-1);
       }
+    }},
+    // ===== v9 新增 8 张：统一约束「任意闸口 ≥ 11 格宽」，避免窄口无意义对峙 =====
+    { id:'plaza', name:'中央广场', build:function(b,gw,gh){
+      var cx=Math.round(gw/2),cy=Math.round(gh/2),u=Math.min(gw,gh);
+      disc(b,gw,gh,cx,cy,Math.round(u*0.11));
+      [[0.14,0.18],[0.86,0.18],[0.14,0.82],[0.86,0.82]].forEach(function(p){
+        disc(b,gw,gh,Math.round(gw*p[0]),Math.round(gh*p[1]),Math.round(gw*0.045));
+      });
+    }},
+    { id:'bridges', name:'三座宽桥', build:function(b,gw,gh){
+      var t=Math.max(3,Math.round(gw*0.016)), half=Math.round(gw*0.04);
+      [0.28,0.5,0.72].forEach(function(f,i){
+        var y=Math.round(gh*f), gx=Math.round(gw*(i%2===0?0.32:0.68));
+        rect(b,gw,gh,2,y,gx-half,y+t-1); rect(b,gw,gh,gx+half,y,gw-3,y+t-1);
+      });
+    }},
+    { id:'fourwinds', name:'四方风道', build:function(b,gw,gh){
+      var cx=Math.round(gw/2),cy=Math.round(gh/2),u=Math.min(gw,gh);
+      rect(b,gw,gh,cx-2,2,cx+2,Math.round(gh*0.28));
+      rect(b,gw,gh,cx-2,Math.round(gh*0.72),cx+2,gh-3);
+      rect(b,gw,gh,2,cy-2,Math.round(gw*0.24),cy+2);
+      rect(b,gw,gh,Math.round(gw*0.76),cy-2,gw-3,cy+2);
+      disc(b,gw,gh,cx,cy,Math.round(u*0.05));
+    }},
+    { id:'islands', name:'群岛', build:function(b,gw,gh){
+      var u=Math.min(gw,gh);
+      [[0.22,0.3],[0.5,0.22],[0.78,0.3],[0.3,0.7],[0.7,0.7],[0.5,0.82]].forEach(function(p,i){
+        disc(b,gw,gh,Math.round(gw*p[0]),Math.round(gh*p[1]),Math.round(u*(i%2?0.07:0.06)));
+      });
+    }},
+    { id:'gates', name:'双层宽门', build:function(b,gw,gh){
+      var t=Math.max(3,Math.round(gw*0.016)), gh2=Math.round(gh*0.5);
+      [0.34,0.66].forEach(function(f){
+        var x=Math.round(gw*f), half=Math.round(gh*0.11);
+        rect(b,gw,gh,x,2,x+t-1,gh2-half); rect(b,gw,gh,x,gh2+half,x+t-1,gh-3);
+      });
+    }},
+    { id:'arc', name:'弧阵', build:function(b,gw,gh){
+      var cx=Math.round(gw/2),cy=Math.round(gh/2),u=Math.min(gw,gh);
+      ring(b,gw,gh,cx,cy,Math.round(u*0.22),Math.max(3,Math.round(u*0.02)),[0.15,Math.PI-0.15]);
+      ring(b,gw,gh,cx,cy,Math.round(u*0.34),Math.max(3,Math.round(u*0.02)),[Math.PI+0.15,-0.15]);
+      disc(b,gw,gh,cx,cy,Math.round(u*0.045));
+    }},
+    { id:'splitfield', name:'三分场', build:function(b,gw,gh){
+      var t=Math.max(3,Math.round(gw*0.016)), half=Math.round(gh*0.075);
+      [0.34,0.66].forEach(function(f,i){
+        var x=Math.round(gw*f), y=Math.round(gh*(i%2===0?0.36:0.64));
+        rect(b,gw,gh,x,2,x+t-1,y-half); rect(b,gw,gh,x,y+half,x+t-1,gh-3);
+      });
+    }},
+    { id:'meadow', name:'林间空地', build:function(b,gw,gh){
+      var u=Math.min(gw,gh);
+      [[0.18,0.5],[0.82,0.5],[0.5,0.16],[0.5,0.84],[0.28,0.28],[0.72,0.72]].forEach(function(p){
+        disc(b,gw,gh,Math.round(gw*p[0]),Math.round(gh*p[1]),Math.round(u*0.055));
+      });
+      disc(b,gw,gh,Math.round(gw/2),Math.round(gh/2),Math.round(u*0.045));
     }}
   ];
   // P1-1 纯函数：把比例坐标的传送门定义落到具体网格，避开边界墙
@@ -802,8 +869,6 @@
       aiLevel: clamp(opts.aiLevel === undefined ? 1 : opts.aiLevel, 0, 2),
       aiPersona: opts.aiPersona || 'classic',
       dash: { active:0, cd:0, duration:(opts.dashDuration||0.9), cooldown:(opts.dashCooldown||5) },
-      // v8.1：P2 独立冲刺状态，参数与 P1 一致，互不影响
-      dash2: { active:0, cd:0, duration:(opts.dashDuration||0.9), cooldown:(opts.dashCooldown||5) },
       milestones: [], events:[]
     };
     // PHP 默认 -1（死亡），确保中立粒子放不满时不会留下 alive 的幽灵粒子
@@ -954,13 +1019,6 @@
     var dashMul = (w.dash && w.dash.active > 0) ? 2.6 : 1;
     moveCursorToward(w, tm, tm.tx, tm.ty, dt, dashMul);
     if (tm.split) moveCursor2Toward(w, tm, tm.tx2, tm.ty2, dt);
-    // v8.1 本地双人：P2 拥有独立冲刺与独立分兵，与 P1 操作对等
-    if (w.nTeams > 1 && w.teams[1].isAI === false) {
-      var p2 = w.teams[1];
-      var dash2Mul = (w.dash2 && w.dash2.active > 0) ? 2.6 : 1;
-      moveCursorToward(w, p2, p2.tx, p2.ty, dt, dash2Mul);
-      if (p2.split) moveCursor2Toward(w, p2, p2.tx2, p2.ty2, dt);
-    }
   }
 
   // P2-3 纯函数：里程碑检测。events 只追加一次，UI 按索引消费
@@ -989,10 +1047,6 @@
     if (w.dash) {
       if (w.dash.active > 0) w.dash.active = Math.max(0, w.dash.active - dt);
       if (w.dash.cd > 0) w.dash.cd = Math.max(0, w.dash.cd - dt);
-      if (w.dash2) {
-        if (w.dash2.active > 0) w.dash2.active = Math.max(0, w.dash2.active - dt);
-        if (w.dash2.cd > 0) w.dash2.cd = Math.max(0, w.dash2.cd - dt);
-      }
     }
     aiStep(w, dt);
     movePlayerCursor(w, dt);
@@ -1021,7 +1075,7 @@
       if (hereTile===TERRAIN.DANGER || hereTile===TERRAIN.MEDICINE)
         w.php[fi]=terrainHealth(hereTile,w.php[fi],hz);
       // v4 双光标分兵：玩家队按粒子序号奇偶分流到第二场
-      var field = (team<2 && w.teams[team].split && (fi & 1)) ? w.fields2[team] : w.fields[team];
+      var field = (team===0 && w.teams[0].split && (fi & 1)) ? w.fields2[team] : w.fields[team];
       // v4 胶水区：本 tick 不允许移动时跳过移动尝试，直接进入战斗判定
       var g=gradientAt(field,w.gw,w.gh,fx,fy);
       var dir=g.dir;
@@ -1232,6 +1286,57 @@
     } catch (e) { return { cursor:4, music:50, sfx:70, water:15 }; }
   }
   function saveOpts() { try { localStorage.setItem('lw2opts', JSON.stringify(opts)); } catch (e) {} }
+  // ===== v9 关卡闯关：12 关递进，进度存 localStorage =====
+  var LEVEL_DEFS = [
+    {id:1, name:'初阵·开阔水域', map:'open',     teams:2, time:120, aiLevel:0, goal:'domination', desc:'吞并全部敌军'},
+    {id:2, name:'双柱之间',       map:'columns',  teams:3, time:150, aiLevel:0, goal:'domination', desc:'吞并全部敌军'},
+    {id:3, name:'限时突袭',       map:'classic',  teams:3, time:90,  aiLevel:0, goal:'majority',  desc:'90秒内占比过半'},
+    {id:4, name:'十字要塞',       map:'cross',    teams:4, time:150, aiLevel:1, goal:'domination', desc:'吞并全部敌军'},
+    {id:5, name:'回廊争夺',       map:'twin',     teams:4, time:150, aiLevel:1, goal:'majority',  desc:'时间到时占比过半'},
+    {id:6, name:'迷宫猎手',       map:'maze',     teams:4, time:180, aiLevel:1, goal:'domination', desc:'吞并全部敌军'},
+    {id:7, name:'螺旋推进',       map:'spiral',   teams:4, time:180, aiLevel:1, goal:'majority',  desc:'时间到时占比过半'},
+    {id:8, name:'靶心攻坚',       map:'rings',    teams:5, time:180, aiLevel:2, goal:'domination', desc:'吞并全部敌军'},
+    {id:9, name:'阔闸大战',       map:'lanes',    teams:5, time:180, aiLevel:2, goal:'majority',  desc:'时间到时占比过半'},
+    {id:10,name:'七队混战',       map:'plaza',    teams:6, time:200, aiLevel:2, goal:'majority',  desc:'时间到时占比过半'},
+    {id:11,name:'群岛远征',       map:'islands',  teams:6, time:200, aiLevel:2, goal:'domination', desc:'吞并全部敌军'},
+    {id:12,name:'终局·双子回廊', map:'bridges',  teams:6, time:210, aiLevel:2, goal:'domination', desc:'吞并全部敌军'}
+  ];
+  var campaign = { unlocked:1, cleared:[] };
+  function loadCampaign() {
+    try { var c=JSON.parse(localStorage.getItem('lw9campaign')||'null'); if(c){
+      campaign.unlocked=clamp(c.unlocked|0,1,LEVEL_DEFS.length);
+      campaign.cleared=Array.isArray(c.cleared)?c.cleared:[];
+    } } catch(e){}
+  }
+  function saveCampaign() { try { localStorage.setItem('lw9campaign',JSON.stringify(campaign)); } catch(e){} }
+  var currentLevel = null;
+  function goalMet(w, def) {
+    var r=w.result; if(!r || r.winner!==0) return false;
+    if(def.goal==='domination') return r.reason==='domination';
+    return w.counts[0]*2 >= w.total;
+  }
+  function buildLevels() {
+    loadCampaign();
+    var box=$('levels'); box.innerHTML='';
+    $('campaign-progress').textContent='已通关 '+campaign.cleared.length+' / '+LEVEL_DEFS.length+' 关 · 已解锁至第 '+campaign.unlocked+' 关';
+    LEVEL_DEFS.forEach(function(Lv){
+      var locked=Lv.id>campaign.unlocked, cleared=campaign.cleared.indexOf(Lv.id)>=0;
+      var card=document.createElement('div'); card.className='mapcard'+(locked?' locked':'')+(cleared?' cleared':'');
+      card.innerHTML='<div style="font:20px/1.4 var(--mono);color:'+(locked?'#6b7280':(cleared?'#E8A33D':'#e5e7eb'))+'">'+Lv.id+'</div>'+
+        '<div>'+Lv.name+'</div><div style="font:10px/1.4 var(--mono);color:var(--faint)">'+Lv.desc+' · '+Lv.teams+'队 · '+fmt(Lv.time)+'</div>';
+      if(!locked) card.onclick=function(){ startLevel(Lv.id); };
+      box.appendChild(card);
+    });
+  }
+  function startLevel(id) {
+    var Lv=LEVEL_DEFS.filter(function(x){return x.id===id;})[0]; if(!Lv) return;
+    currentLevel=Lv;
+    setup.map=Lv.map; setup.mode='elimination'; setup.neutral=false; setup.portals=false;
+    setup.shuffleTerrain=false; setup.seedRandom=true; setup.aiLevel=Lv.aiLevel;
+    setup.fixedSeed=20261127+Lv.id*7919;
+    for(var i=0;i<6;i++) setup.modes[i]= i<Lv.teams ? (i===0?'human':'cpu') : 'off';
+    saveSetup(); lastWasRandom=false; startGame(Lv.time);
+  }
   function loadSetup() {
     try {
       var s = JSON.parse(localStorage.getItem('lw2setup') || 'null') || {};
@@ -1255,7 +1360,7 @@
   function fmt(s){ var m=Math.floor(s/60),r=Math.floor(s%60); return (m<10?'0':'')+m+':'+(r<10?'0':'')+r; }
 
   function show(id) {
-    ['view-menu','view-setup','view-game','view-options','view-about'].forEach(function (v) {
+    ['view-menu','view-setup','view-levels','view-game','view-options','view-about'].forEach(function (v) {
       $(v).classList.toggle('hidden', v !== id);
     });
   }
@@ -1344,12 +1449,9 @@
         var b=document.createElement('button'); b.type='button'; b.textContent=m.toUpperCase();
         b.className = setup.modes[si]===m ? 'on' : '';
         b.onclick=function(){
-          // v8.1：同屏最多 2 名 HUMAN，第三名会导致光标无人控制
-          if (m==='human' && setup.modes[si]!=='human') {
-            var hc=0; for (var q=0;q<6;q++) if (setup.modes[q]==='human') hc++;
-            if (hc>=2) { toast('同屏最多 2 人，请先把另一名 HUMAN 改为 CPU'); return; }
-          }
-          setup.modes[si]=m; saveSetup(); buildSlots();
+          // v9：单人模式，仅第 1 队由鼠标操控，其余队伍由 AI 接管
+          if (m==='human' && si!==0) { toast('单人模式：仅第 1 队可由鼠标操控'); return; }
+          setup.modes[si]=(si===0?'human':m); saveSetup(); buildSlots();
         };
         modes.appendChild(b);
       });
@@ -1498,13 +1600,6 @@
       ctx.beginPath(); ctx.arc(dm.x*SCALE,dm.y*SCALE,14+Math.sin(world.tick*0.5)*3,0,6.2831853); ctx.stroke();
       ctx.globalAlpha=1;
     }
-    // v8.1 P2 冲刺光环
-    if (world.dash2 && world.dash2.active>0 && world.teams[1] && world.teams[1].isAI===false) {
-      var d2m=world.teams[1];
-      ctx.strokeStyle='#7DD3FC'; ctx.globalAlpha=0.9; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.arc(d2m.x*SCALE,d2m.y*SCALE,14+Math.sin(world.tick*0.5)*3,0,6.2831853); ctx.stroke();
-      ctx.globalAlpha=1;
-    }
     // 玩家目标点光圈（脉动），指示光标正前往的位置
     var me=world.teams[0];
     if (me && !finished) {
@@ -1512,13 +1607,6 @@
       var pulse=3+Math.sin(world.tick*0.16)*1.2;
       ctx.strokeStyle=me.color; ctx.globalAlpha=0.55; ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.arc(tx,ty,pulse*SCALE*0.6,0,6.2831853); ctx.stroke();
-      ctx.globalAlpha=1;
-    }
-    // v8.1 P2 目标光圈，让第二位玩家看清光标要去的位置
-    if (world.nTeams>1 && world.teams[1].isAI===false && !finished) {
-      var p2m=world.teams[1];
-      ctx.strokeStyle=p2m.color; ctx.globalAlpha=0.55; ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(p2m.tx*SCALE,p2m.ty*SCALE,(3+Math.sin(world.tick*0.16)*1.2)*SCALE*0.6,0,6.2831853); ctx.stroke();
       ctx.globalAlpha=1;
     }
     // 各队光标：十字准星（逻辑坐标 → 缓冲像素）
@@ -1531,17 +1619,12 @@
       ctx.moveTo(cx-8,cy); ctx.lineTo(cx+8,cy);
       ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy+8);
       ctx.stroke();
-      // v8.1 第二光标：菱形，P1/P2 分兵时均可见
-      if (t<2 && tm.split) {
+      // v4 第二光标：菱形，分兵时可见
+      if (t===0 && tm.split) {
         var x2=tm.x2*SCALE, y2=tm.y2*SCALE, q=7;
         ctx.beginPath();
         ctx.moveTo(x2,y2-q); ctx.lineTo(x2+q,y2); ctx.lineTo(x2,y2+q); ctx.lineTo(x2-q,y2); ctx.closePath();
         ctx.stroke();
-      }
-      // v8.1 人类队伍标号：同屏时一眼分清 P1 / P2
-      if (!tm.isAI && t<2) {
-        ctx.fillStyle=tm.color; ctx.font='bold 11px ui-monospace,monospace';
-        ctx.fillText('P'+(t+1), cx+10, cy-10);
       }
     }
   }
@@ -1552,7 +1635,7 @@
       var tm=world.teams[t], row=document.createElement('div'); row.className='team';
       var sw=document.createElement('i'); sw.className='sw'; sw.style.background=tm.color;
       var nm=document.createElement('span'); nm.className='nm';
-      nm.innerHTML=tm.name+'<em>'+(tm.isAI?'CPU':(t===0?'P1':'P'+(t+1)))+'</em>';
+      nm.innerHTML=tm.name+'<em>'+(tm.isAI?'CPU':'YOU')+'</em>';
       var ct=document.createElement('span'); ct.className='ct'; ct.textContent=world.counts[t];
       var bar=document.createElement('div'); bar.className='bar';
       var fill=document.createElement('i'); fill.style.background=tm.color; fill.style.width='0%';
@@ -1565,7 +1648,6 @@
       seg.title=world.teams[q].name; share.appendChild(seg);
     }
     // v8 P0-3：中立核心剩余数（仅在开启时显示）
-    $('dash2box').classList.toggle('hidden', !(world.nTeams>1 && world.teams[1].isAI===false));
     var oldN=$('neutral-row'); if (oldN) oldN.parentNode.removeChild(oldN);
     if (world.neutral) {
       var nr=document.createElement('div'); nr.className='team'; nr.id='neutral-row';
@@ -1599,12 +1681,6 @@
       $('dashfill').style.width=pct.toFixed(0)+'%';
       $('dashlabel').textContent=ready?'READY':(world.dash.active>0?'DASH!':Math.ceil(world.dash.cd)+'s');
     }
-    if (world.dash2 && $('dash2box') && !$('dash2box').classList.contains('hidden')) {
-      var r2=world.dash2.cd<=0 && world.dash2.active<=0;
-      var p2pct=r2?100:(world.dash2.active>0?100:(1-world.dash2.cd/world.dash2.cooldown)*100);
-      $('dash2fill').style.width=p2pct.toFixed(0)+'%';
-      $('dash2label').textContent=r2?'READY':(world.dash2.active>0?'DASH!':Math.ceil(world.dash2.cd)+'s');
-    }
     var segs=$('share').children;
     for (var t=0;t<world.nTeams;t++) {
       if (hudRows[t]) {
@@ -1624,6 +1700,7 @@
   var lastWasRandom = false; // 上一局是否由「随机对局」开启，决定 Play Again 是否重新随机
   function restart() {
     if (lastWasRandom) quickStart(true);
+    else if (currentLevel) startLevel(currentLevel.id);
     else startGame();
   }
   function activeTeamCount() {
@@ -1631,28 +1708,25 @@
     for (var i=0;i<6;i++) if (setup.modes[i]!=='off') n++;
     return clamp(n,2,6);
   }
-  function startGame() {
+  function startGame(customTime) {
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer=null; }
     var n=activeTeamCount();
     // 把 human/cpu/off 压缩到前 n 队；human 必须占第 0 队
     var order=[], humanFound=false;
     for (var i=0;i<6;i++) if (setup.modes[i]!=='off') order.push(i);
     if (!order.length) order=[0,1,2,3];
-    // v8.1：旧存档若含 3+ HUMAN，兜底降级为 CPU，避免第三队光标冻结
-    var modeOf=setup.modes.slice(), seenH=0;
-    for (var oi=0;oi<order.length;oi++) {
-      if (modeOf[order[oi]]==='human') {
-        if (seenH>=2) modeOf[order[oi]]='cpu'; else seenH++;
-      }
-    }
-    var hasHuman=order.some(function(i){return modeOf[i]==='human';});
+    // v9：单人模式，第 0 队由玩家控制，其余全部 AI
+    var modeOf=setup.modes.slice();
+    modeOf[order[0]]='human';
+    for (var oi=1;oi<order.length;oi++) if (modeOf[order[oi]]==='human') modeOf[order[oi]]='cpu';
+    var hasHuman=true;
     // v8：人类队伍排前面，确保第 0 队始终由鼠标控制，其余人类队走 IJKL
     order.sort(function(a,b){ var ha=modeOf[a]==='human'?0:1, hb=modeOf[b]==='human'?0:1; return ha-hb; });
     var seed = setup.seedRandom ? ((Math.random()*4294967296)>>>0) : (setup.fixedSeed || 20261127);
     window.__lwSeed = seed;
     world=L.createWorld({ teams:n, map:setup.map, mode:setup.mode, attack:setup.rules.attack, defense:setup.rules.defense,
       health:setup.rules.health, influence:setup.rules.influence, army:setup.rules.army,
-      cursorSpeed:opts.cursor, seed:seed, time:180,
+      cursorSpeed:opts.cursor, seed:seed, time:(customTime||180),
       aiLevel:setup.aiLevel, aiPersona:setup.aiPersona,
       neutral:setup.neutral, portals:setup.portals, shuffleTerrain:setup.shuffleTerrain });
     // 按 setup 的颜色模式重映射队伍颜色标签（human 优先第 0 队）
@@ -1681,7 +1755,7 @@
     finished=true;
     var r=world.result, win=world.teams[r.winner];
     $('result-reason').textContent=r.reason==='domination'?'DOMINATION':(r.reason==='stronghold'?'据点占领':'TIME OUT');
-    $('result-title').textContent=win.name+(win.isAI?' (CPU)':' (P1)')+' WINS';
+    $('result-title').textContent=win.name+(win.isAI?' (CPU)':' (YOU)')+' WINS';
     var share=Math.round(world.counts[r.winner]/world.total*100);
     var used=Math.round((180-world.timeLeft));
     $('result-detail').innerHTML='占比 '+share+'% · 用时 '+used+' 秒<br>'+world.teams.map(function(tm,i){return tm.name+' '+world.counts[i];}).join(' · ');
@@ -1694,6 +1768,17 @@
       '<span>友军治疗</span><b>'+world.stats.heals+'</b>'+
       '<span>传送次数</span><b>'+world.stats.teleports+'</b>'+
       '<span>里程碑</span><b class="wide">'+ms+'</b>';
+    var campBox=$('result-campaign'); campBox.classList.add('hidden');
+    if (currentLevel) {
+      var winLv=goalMet(world,currentLevel);
+      if (winLv && campaign.cleared.indexOf(currentLevel.id)<0) campaign.cleared.push(currentLevel.id);
+      if (winLv && campaign.unlocked<LEVEL_DEFS.length) campaign.unlocked=Math.max(campaign.unlocked,currentLevel.id+1);
+      saveCampaign();
+      campBox.classList.remove('hidden');
+      campBox.textContent=winLv
+        ? ('🏁 第 '+currentLevel.id+' 关通过！'+(currentLevel.id<LEVEL_DEFS.length?('已解锁第 '+(currentLevel.id+1)+' 关'):'全部关卡通关'))
+        : ('🏁 第 '+currentLevel.id+' 关未达标：'+currentLevel.desc+'。可再次挑战。');
+    }
     $('resultbox').classList.remove('hidden');
     sfx(r.winner===0?'win':'lose');
   }
@@ -1728,20 +1813,6 @@
     if (on) { tm.tx2=tm.tx; tm.ty2=tm.ty; }
     $('splittip').classList.toggle('hidden', !on);
   }
-  // v8.1：P2 独立冲刺与分兵，快捷键 . / U
-  function tryDash2() {
-    if (!world || finished || paused || countdownTimer || !setup.dash) return;
-    if (!world.dash2 || world.nTeams<2 || world.teams[1].isAI!==false) return;
-    if (world.dash2.cd>0 || world.dash2.active>0) return;
-    world.dash2.active=world.dash2.duration; world.dash2.cd=world.dash2.cooldown;
-    sfx('dash'); toast('» P2 DASH!');
-  }
-  function setSplit2(on) {
-    if (!world || world.nTeams<2 || world.teams[1].isAI!==false) return;
-    var tm=world.teams[1]; tm.split=on;
-    if (on) { tm.tx2=tm.tx; tm.ty2=tm.ty; }
-    toast(on?'◈ P2 分兵开启':'◈ P2 分兵关闭');
-  }
   function aim(e, isDown) {
     if (!world || finished || paused || countdownTimer) return;
     var r=cv.getBoundingClientRect();
@@ -1762,8 +1833,6 @@
     if (k==='r' && world && !countdownTimer) restart();
     if (k==='f' && world && !finished && !countdownTimer) setSplit(!world.teams[0].split);
     if (k==='q' && world && !finished && !countdownTimer) tryDash();
-    if (k==='.' && world && !finished && !countdownTimer) tryDash2();
-    if (k==='u' && world && !finished && !countdownTimer) setSplit2(!world.teams[1].split);
   });
   window.addEventListener('keyup', function(e){ keys[e.key.toLowerCase()]=false; });
   function nudge() {
@@ -1774,15 +1843,6 @@
     if (keys['w']||keys['arrowup']) tm.ty-=d;
     if (keys['s']||keys['arrowdown']) tm.ty+=d;
     tm.tx=clamp(tm.tx,2,world.width-3); tm.ty=clamp(tm.ty,2,world.height-3);
-    // P1-3 本地双人：第 2 队用 IJKL 微调
-    if (world.nTeams>1 && world.teams[1].isAI===false) {
-      var p2=world.teams[1], d2=(2+opts.cursor)*1.5;
-      if (keys['j']) p2.tx-=d2;
-      if (keys['l']) p2.tx+=d2;
-      if (keys['i']) p2.ty-=d2;
-      if (keys['k']) p2.ty+=d2;
-      p2.tx=clamp(p2.tx,2,world.width-3); p2.ty=clamp(p2.ty,2,world.height-3);
-    }
   }
 
   // ===== 主循环 =====
@@ -1810,6 +1870,7 @@
   }
 
   function quickStart(randomize) {
+    currentLevel=null;
     lastWasRandom = !!randomize;
     if (randomize) {
       setup.map = L.MAP_DEFS[Math.floor(Math.random()*L.MAP_DEFS.length)].id;
@@ -1833,7 +1894,9 @@
   // ===== 按钮绑定 =====
   $('btn-quick').onclick=function(){ quickStart(false); };
   $('btn-random').onclick=function(){ quickStart(true); };
-  $('btn-single').onclick=function(){ buildModesel(); buildSlots(); buildTactics(); buildRules(); buildMaps(); buildAIPick(); buildToggles(); show('view-setup'); };
+  $('btn-single').onclick=function(){ currentLevel=null; buildModesel(); buildSlots(); buildTactics(); buildRules(); buildMaps(); buildAIPick(); buildToggles(); show('view-setup'); };
+  $('btn-campaign').onclick=function(){ buildLevels(); show('view-levels'); };
+  $('btn-levels-back').onclick=function(){ show('view-menu'); };
   $('btn-options').onclick=function(){ show('view-options'); };
   $('btn-about').onclick=function(){ show('view-about'); };
   $('btn-setup-back').onclick=function(){ show('view-menu'); };
@@ -1866,8 +1929,6 @@
     show:show,
     aim:function(x,y){ if (world){ world.teams[0].tx=x; world.teams[0].ty=y; } },
       setSplit:function(on){ if (world){ world.teams[0].split=!!on; document.getElementById('splittip').classList.toggle('hidden',!on); } },
-      tryDash2:function(){ tryDash2(); },
-      setSplit2:function(on){ setSplit2(on); },
     aim2:function(x,y){ if (world){ world.teams[0].tx2=x; world.teams[0].ty2=y; } },
     setMode:function(m){ setup.mode=m; saveSetup(); },
     setOptions:function(o){
@@ -1884,6 +1945,10 @@
     },
     dash:function(){ tryDash(); if(world) return {active:world.dash.active,cd:world.dash.cd}; return null; },
     getSeed:function(){ return window.__lwSeed || 0; },
+    levels:LEVEL_DEFS,
+    campaign:function(){ return {unlocked:campaign.unlocked,cleared:campaign.cleared.slice()}; },
+    startLevel:startLevel,
+    clearedCount:function(){ return campaign.cleared.length; },
     applyTactic:function(id){ var p=L.TACTICS.filter(function(x){return x.id===id;})[0]; if(!p)return false; setup.tactic=id; ['attack','defense','health','influence','army'].forEach(function(k){setup.rules[k]=p[k];}); saveSetup(); return true; }
   };
 
