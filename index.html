@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="build" content="v8.0.0 · 2026-11-28 18:20">
+<meta name="build" content="v8.1.0 · 2026-11-28 18:40">
 <link rel="icon" href="data:,">
 <title>液态战争 · LIQUID WAR.IO</title>
 <style>
@@ -190,6 +190,7 @@
             <div class="modesel" id="modesel"></div>
             <p class="sect">Teams</p>
             <div id="slots"></div>
+            <p class="dash-hint">本地同屏最多 2 名 HUMAN：P1 鼠标+WASD+Q，P2 用 IJKL+.(冲刺)+U(分兵)</p>
             <p class="sect" style="margin-top:18px">Tactics · 战术预设</p>
             <div class="tactics" id="tactics"></div>
             <p class="sect">Rules</p>
@@ -264,9 +265,13 @@
             <p class="sect" style="margin-top:14px">Dash · 冲刺 <b id="dashlabel" style="float:right;color:var(--accent)">READY</b></p>
             <div class="bar"><i id="dashfill"></i></div>
             <p class="dash-hint">Q 键 / 鼠标右键 · 光标加速 2.6×</p>
+            <div id="dash2box" class="hidden" style="margin-top:10px">
+              <p class="sect" style="margin-top:0">P2 Dash <b id="dash2label" style="float:right;color:#7DD3FC">READY</b></p>
+              <div class="bar"><i id="dash2fill" style="background:#7DD3FC"></i></div>
+            </div>
           </div>
-          <p class="split-tip hidden" id="splittip">◈ 双光标分兵中 · Shift+点击移动副场 · F 键关闭</p>
-          <p class="keys"><b>鼠标 / 触摸</b> 指向目标<br><b>Shift+点击</b> 分兵第二路 · <b>F</b> 开关<br><b>WASD / ↑←↓→</b> P1 微调<br><b>IJKL</b> P2 微调（双人时）<br><b>Q / 右键</b> 冲刺 · <b>Esc / 空格</b> 暂停 · <b>R</b> 重开</p>
+          <p class="split-tip hidden" id="splittip">◈ P1 分兵中 · Shift+点击移动副场 · F 键关闭（P2 按 U 分兵）</p>
+          <p class="keys"><b>P1</b> 鼠标指向 / WASD 微调 · Q 冲刺 · Shift+点击 或 F 分兵<br><b>P2</b> IJKL 移动光标 · <b>.</b> 冲刺 · <b>U</b> 分兵<br><b>Esc/空格</b> 暂停 · <b>R</b> 重开（同屏最多 2 人）</p>
         </aside>
       </div>
     </section>
@@ -312,7 +317,7 @@
   </main>
 
   <footer>
-    <span data-build>v8.0.0 · 2026-11-28 18:20</span>
+    <span data-build>v8.1.0 · 2026-11-28 18:40</span>
     <span>LW5 战斗模型 · 12 方向梯度 · 确定性单测</span>
   </footer>
 </div>
@@ -797,6 +802,8 @@
       aiLevel: clamp(opts.aiLevel === undefined ? 1 : opts.aiLevel, 0, 2),
       aiPersona: opts.aiPersona || 'classic',
       dash: { active:0, cd:0, duration:(opts.dashDuration||0.9), cooldown:(opts.dashCooldown||5) },
+      // v8.1：P2 独立冲刺状态，参数与 P1 一致，互不影响
+      dash2: { active:0, cd:0, duration:(opts.dashDuration||0.9), cooldown:(opts.dashCooldown||5) },
       milestones: [], events:[]
     };
     // PHP 默认 -1（死亡），确保中立粒子放不满时不会留下 alive 的幽灵粒子
@@ -947,10 +954,12 @@
     var dashMul = (w.dash && w.dash.active > 0) ? 2.6 : 1;
     moveCursorToward(w, tm, tm.tx, tm.ty, dt, dashMul);
     if (tm.split) moveCursor2Toward(w, tm, tm.tx2, tm.ty2, dt);
-    // P1-3 本地双人：第 2 队若被标记为人类，使用其目标点而非 AI
+    // v8.1 本地双人：P2 拥有独立冲刺与独立分兵，与 P1 操作对等
     if (w.nTeams > 1 && w.teams[1].isAI === false) {
       var p2 = w.teams[1];
-      moveCursorToward(w, p2, p2.tx, p2.ty, dt);
+      var dash2Mul = (w.dash2 && w.dash2.active > 0) ? 2.6 : 1;
+      moveCursorToward(w, p2, p2.tx, p2.ty, dt, dash2Mul);
+      if (p2.split) moveCursor2Toward(w, p2, p2.tx2, p2.ty2, dt);
     }
   }
 
@@ -980,6 +989,10 @@
     if (w.dash) {
       if (w.dash.active > 0) w.dash.active = Math.max(0, w.dash.active - dt);
       if (w.dash.cd > 0) w.dash.cd = Math.max(0, w.dash.cd - dt);
+      if (w.dash2) {
+        if (w.dash2.active > 0) w.dash2.active = Math.max(0, w.dash2.active - dt);
+        if (w.dash2.cd > 0) w.dash2.cd = Math.max(0, w.dash2.cd - dt);
+      }
     }
     aiStep(w, dt);
     movePlayerCursor(w, dt);
@@ -1008,7 +1021,7 @@
       if (hereTile===TERRAIN.DANGER || hereTile===TERRAIN.MEDICINE)
         w.php[fi]=terrainHealth(hereTile,w.php[fi],hz);
       // v4 双光标分兵：玩家队按粒子序号奇偶分流到第二场
-      var field = (team===0 && w.teams[0].split && (fi & 1)) ? w.fields2[team] : w.fields[team];
+      var field = (team<2 && w.teams[team].split && (fi & 1)) ? w.fields2[team] : w.fields[team];
       // v4 胶水区：本 tick 不允许移动时跳过移动尝试，直接进入战斗判定
       var g=gradientAt(field,w.gw,w.gh,fx,fy);
       var dir=g.dir;
@@ -1331,7 +1344,11 @@
         var b=document.createElement('button'); b.type='button'; b.textContent=m.toUpperCase();
         b.className = setup.modes[si]===m ? 'on' : '';
         b.onclick=function(){
-          // v8：不再强制单一 HUMAN，可设第二人为 P2 同屏对战
+          // v8.1：同屏最多 2 名 HUMAN，第三名会导致光标无人控制
+          if (m==='human' && setup.modes[si]!=='human') {
+            var hc=0; for (var q=0;q<6;q++) if (setup.modes[q]==='human') hc++;
+            if (hc>=2) { toast('同屏最多 2 人，请先把另一名 HUMAN 改为 CPU'); return; }
+          }
           setup.modes[si]=m; saveSetup(); buildSlots();
         };
         modes.appendChild(b);
@@ -1481,6 +1498,13 @@
       ctx.beginPath(); ctx.arc(dm.x*SCALE,dm.y*SCALE,14+Math.sin(world.tick*0.5)*3,0,6.2831853); ctx.stroke();
       ctx.globalAlpha=1;
     }
+    // v8.1 P2 冲刺光环
+    if (world.dash2 && world.dash2.active>0 && world.teams[1] && world.teams[1].isAI===false) {
+      var d2m=world.teams[1];
+      ctx.strokeStyle='#7DD3FC'; ctx.globalAlpha=0.9; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(d2m.x*SCALE,d2m.y*SCALE,14+Math.sin(world.tick*0.5)*3,0,6.2831853); ctx.stroke();
+      ctx.globalAlpha=1;
+    }
     // 玩家目标点光圈（脉动），指示光标正前往的位置
     var me=world.teams[0];
     if (me && !finished) {
@@ -1488,6 +1512,13 @@
       var pulse=3+Math.sin(world.tick*0.16)*1.2;
       ctx.strokeStyle=me.color; ctx.globalAlpha=0.55; ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.arc(tx,ty,pulse*SCALE*0.6,0,6.2831853); ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    // v8.1 P2 目标光圈，让第二位玩家看清光标要去的位置
+    if (world.nTeams>1 && world.teams[1].isAI===false && !finished) {
+      var p2m=world.teams[1];
+      ctx.strokeStyle=p2m.color; ctx.globalAlpha=0.55; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(p2m.tx*SCALE,p2m.ty*SCALE,(3+Math.sin(world.tick*0.16)*1.2)*SCALE*0.6,0,6.2831853); ctx.stroke();
       ctx.globalAlpha=1;
     }
     // 各队光标：十字准星（逻辑坐标 → 缓冲像素）
@@ -1500,12 +1531,17 @@
       ctx.moveTo(cx-8,cy); ctx.lineTo(cx+8,cy);
       ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy+8);
       ctx.stroke();
-      // v4 第二光标：菱形，分兵时可见
-      if (t===0 && tm.split) {
+      // v8.1 第二光标：菱形，P1/P2 分兵时均可见
+      if (t<2 && tm.split) {
         var x2=tm.x2*SCALE, y2=tm.y2*SCALE, q=7;
         ctx.beginPath();
         ctx.moveTo(x2,y2-q); ctx.lineTo(x2+q,y2); ctx.lineTo(x2,y2+q); ctx.lineTo(x2-q,y2); ctx.closePath();
         ctx.stroke();
+      }
+      // v8.1 人类队伍标号：同屏时一眼分清 P1 / P2
+      if (!tm.isAI && t<2) {
+        ctx.fillStyle=tm.color; ctx.font='bold 11px ui-monospace,monospace';
+        ctx.fillText('P'+(t+1), cx+10, cy-10);
       }
     }
   }
@@ -1529,6 +1565,7 @@
       seg.title=world.teams[q].name; share.appendChild(seg);
     }
     // v8 P0-3：中立核心剩余数（仅在开启时显示）
+    $('dash2box').classList.toggle('hidden', !(world.nTeams>1 && world.teams[1].isAI===false));
     var oldN=$('neutral-row'); if (oldN) oldN.parentNode.removeChild(oldN);
     if (world.neutral) {
       var nr=document.createElement('div'); nr.className='team'; nr.id='neutral-row';
@@ -1561,6 +1598,12 @@
       var pct=ready?100:(world.dash.active>0?100:(1-world.dash.cd/world.dash.cooldown)*100);
       $('dashfill').style.width=pct.toFixed(0)+'%';
       $('dashlabel').textContent=ready?'READY':(world.dash.active>0?'DASH!':Math.ceil(world.dash.cd)+'s');
+    }
+    if (world.dash2 && $('dash2box') && !$('dash2box').classList.contains('hidden')) {
+      var r2=world.dash2.cd<=0 && world.dash2.active<=0;
+      var p2pct=r2?100:(world.dash2.active>0?100:(1-world.dash2.cd/world.dash2.cooldown)*100);
+      $('dash2fill').style.width=p2pct.toFixed(0)+'%';
+      $('dash2label').textContent=r2?'READY':(world.dash2.active>0?'DASH!':Math.ceil(world.dash2.cd)+'s');
     }
     var segs=$('share').children;
     for (var t=0;t<world.nTeams;t++) {
@@ -1595,9 +1638,16 @@
     var order=[], humanFound=false;
     for (var i=0;i<6;i++) if (setup.modes[i]!=='off') order.push(i);
     if (!order.length) order=[0,1,2,3];
-    var hasHuman=order.some(function(i){return setup.modes[i]==='human';});
+    // v8.1：旧存档若含 3+ HUMAN，兜底降级为 CPU，避免第三队光标冻结
+    var modeOf=setup.modes.slice(), seenH=0;
+    for (var oi=0;oi<order.length;oi++) {
+      if (modeOf[order[oi]]==='human') {
+        if (seenH>=2) modeOf[order[oi]]='cpu'; else seenH++;
+      }
+    }
+    var hasHuman=order.some(function(i){return modeOf[i]==='human';});
     // v8：人类队伍排前面，确保第 0 队始终由鼠标控制，其余人类队走 IJKL
-    order.sort(function(a,b){ var ha=setup.modes[a]==='human'?0:1, hb=setup.modes[b]==='human'?0:1; return ha-hb; });
+    order.sort(function(a,b){ var ha=modeOf[a]==='human'?0:1, hb=modeOf[b]==='human'?0:1; return ha-hb; });
     var seed = setup.seedRandom ? ((Math.random()*4294967296)>>>0) : (setup.fixedSeed || 20261127);
     window.__lwSeed = seed;
     world=L.createWorld({ teams:n, map:setup.map, mode:setup.mode, attack:setup.rules.attack, defense:setup.rules.defense,
@@ -1610,7 +1660,7 @@
       var src=order[i];
       tm.name=L.TEAM_NAMES[src];
       tm.color=L.TEAM_COLORS[src];
-      tm.isAI=setup.modes[src]!=='human';
+      tm.isAI=modeOf[src]!=='human';
     });
     world.cursorSpeed=opts.cursor;
     paused=false; finished=false; acc=0; last=0;
@@ -1678,6 +1728,20 @@
     if (on) { tm.tx2=tm.tx; tm.ty2=tm.ty; }
     $('splittip').classList.toggle('hidden', !on);
   }
+  // v8.1：P2 独立冲刺与分兵，快捷键 . / U
+  function tryDash2() {
+    if (!world || finished || paused || countdownTimer || !setup.dash) return;
+    if (!world.dash2 || world.nTeams<2 || world.teams[1].isAI!==false) return;
+    if (world.dash2.cd>0 || world.dash2.active>0) return;
+    world.dash2.active=world.dash2.duration; world.dash2.cd=world.dash2.cooldown;
+    sfx('dash'); toast('» P2 DASH!');
+  }
+  function setSplit2(on) {
+    if (!world || world.nTeams<2 || world.teams[1].isAI!==false) return;
+    var tm=world.teams[1]; tm.split=on;
+    if (on) { tm.tx2=tm.tx; tm.ty2=tm.ty; }
+    toast(on?'◈ P2 分兵开启':'◈ P2 分兵关闭');
+  }
   function aim(e, isDown) {
     if (!world || finished || paused || countdownTimer) return;
     var r=cv.getBoundingClientRect();
@@ -1698,6 +1762,8 @@
     if (k==='r' && world && !countdownTimer) restart();
     if (k==='f' && world && !finished && !countdownTimer) setSplit(!world.teams[0].split);
     if (k==='q' && world && !finished && !countdownTimer) tryDash();
+    if (k==='.' && world && !finished && !countdownTimer) tryDash2();
+    if (k==='u' && world && !finished && !countdownTimer) setSplit2(!world.teams[1].split);
   });
   window.addEventListener('keyup', function(e){ keys[e.key.toLowerCase()]=false; });
   function nudge() {
@@ -1799,7 +1865,9 @@
     logic:L,
     show:show,
     aim:function(x,y){ if (world){ world.teams[0].tx=x; world.teams[0].ty=y; } },
-    setSplit:function(on){ if (world){ world.teams[0].split=!!on; document.getElementById('splittip').classList.toggle('hidden',!on); } },
+      setSplit:function(on){ if (world){ world.teams[0].split=!!on; document.getElementById('splittip').classList.toggle('hidden',!on); } },
+      tryDash2:function(){ tryDash2(); },
+      setSplit2:function(on){ setSplit2(on); },
     aim2:function(x,y){ if (world){ world.teams[0].tx2=x; world.teams[0].ty2=y; } },
     setMode:function(m){ setup.mode=m; saveSetup(); },
     setOptions:function(o){
